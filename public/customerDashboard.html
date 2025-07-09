@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <script>
+    // Run this before loading the full page content
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      alert('No token found. Redirecting...');
+      window.location.href = '/';
+    }
+
+    // Immediately check the role
+    fetch('/profile', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Unauthorized');
+      return res.json();
+    })
+    .catch(err => {
+      alert('Access denied or token invalid. Redirecting...');
+      window.location.href = '/';
+    });
+  </script>
+</head>
+<body>
+  <h1>Welcome to the Customer Dashboard!</h1>
+  <p id="tokenDisplay"></p>
+  <div>
+    <button onclick="profile()">Profile</button>
+    <div id="toggle-profile" style="display: none;"></div>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <!-- ✅ Feedback prompt appears first -->
+  <div id="feedbackPrompt" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px;">
+    <p id="feedbackText"></p>
+    <button onclick="giveFeedback()">Yes</button>
+    <button onclick="dismissFeedback()">No</button>
+  </div>
+
+  <!-- ✅ Hidden feedback form appears if Yes is clicked -->
+  <div id="send-feedback" style="display: none;">
+    <h2>Send Feedback</h2>
+    <form id="feedbackForm">
+      <textarea id="feedbackMessage" rows="4" cols="50" placeholder="Enter your feedback..." required></textarea><br>
+      <button onclick="submitFeedback()" type="submit">Submit</button>
+    </form>
+    <p id="feedbackStatus"></p>
+  </div>
+
+
+
+  <script>
+    const toggleProfile = document.getElementById('toggle-profile');
+    let profileVisible = false;
+
+    document.getElementById('tokenDisplay').textContent = `Your token: ${token}`;
+
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+
+    function profile() {
+      if (!profileVisible) {
+        fetch('/profile', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Unauthorized');
+          return res.json();
+        })
+        .then(data => {
+          toggleProfile.innerHTML = `
+            <p>Username: ${data.username}</p>
+            <p>Email: ${data.email}</p>
+            <p>Role: ${data.role}</p>
+            <p>Points: ${data.points}</p>
+            <p>Code: ${data.user_code}</p>
+          `;
+          toggleProfile.style.display = 'block';
+          profileVisible = true;
+        })
+        .catch(err => {
+          alert('Token invalid or expired. Redirecting...');
+          window.location.href = '/';
+        });
+      } else {
+        toggleProfile.style.display = 'none';
+        profileVisible = false;
+      }
+    }
+
+  document.getElementById('feedbackForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const message = document.getElementById('feedbackMessage').value;
+
+  fetch('/feedback/sendFeedback', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ message })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('feedbackStatus').textContent = data.message;
+    document.getElementById('feedbackMessage').value = '';
+  })
+  .catch(err => {
+    document.getElementById('feedbackStatus').textContent = 'Failed to send feedback.';
+    console.error(err);
+    });
+  });
+
+function checkForRecentOrder() {
+  fetch('/orders/recent', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ordered_today && !data.feedback_given) {
+      document.getElementById('feedbackPrompt').style.display = 'block';
+      document.getElementById('feedbackText').textContent =
+        `Today: You ordered from BradDex Talamban Branch. Give feedback?`;
+    }
+  })
+  .catch(err => console.error('Failed to check recent order:', err));
+}
+
+function giveFeedback() {
+  document.getElementById('feedbackPrompt').style.display = 'none';
+  document.getElementById('send-feedback').style.display = 'block';
+}
+
+function dismissFeedback() {
+  document.getElementById('feedbackPrompt').style.display = 'none';
+  // Optionally notify server that feedback was dismissed
+}
+
+function submitFeedback() {
+  document.getElementById('send-feedback').style.display = 'none';
+  alert('Send Feedback successfully!');
+}
+
+checkForRecentOrder();
+  </script>
+</body>
+</html>

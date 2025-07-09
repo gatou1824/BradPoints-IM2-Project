@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <script>
+    // Run this before loading the full page content
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      alert('No token found. Redirecting...');
+      window.location.href = '/';
+    }
+
+    // Immediately check the role
+    fetch('/profile', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Unauthorized');
+      return res.json();
+    })
+    .then(data => {
+      // ALLOW only staff and admin
+      if (data.role !== 'staff' && data.role !== 'admin') {
+        window.location.href = '/dashboard/customer';
+        return;
+      } 
+      // If role is okay, do something...
+    })
+    .catch(err => {
+      alert('Access denied or token invalid. Redirecting...');
+      window.location.href = '/';
+    });
+  </script>
+</head>
+<body>
+  <h1>Welcome to the Dashboard!</h1>
+  <p id="tokenDisplay"></p>
+  <div>
+    <button onclick="profile()">Profile</button>
+    <div id="toggle-profile" style="display: none;"></div>
+    <button onclick="logout()">Logout</button>
+  </div>
+  <form id="customerForm">
+    <input type="text" id="customerCodeInput" placeholder="Enter customer code" required />
+    <button type="submit">Check Customer</button>
+  </form>
+  <div id="customer-order-confirmation"></div>
+  <button id="placeOrderBtn" style="display: none;">Place Order</button>
+
+  <div id="foods-list" style="display: none;">
+    <!-- list of foods autamtically displayed here s-->
+  </div>
+
+  <div id="order-items">
+    <!-- order items get displayed here  -->
+  </div>
+
+  <div id="display-all-orders">
+    <!-- display all orders made within the day -->
+  </div>
+
+<script>
+  const foodsList = document.getElementById('foods-list');
+  const toggleProfile = document.getElementById('toggle-profile');
+  const placeOrderBtn = document.getElementById('placeOrderBtn');
+  let profileVisible = false;
+  let selectedFoods = [];
+  let currentCustomer = null;
+
+  document.getElementById('tokenDisplay').textContent = `Your token: ${token}`;
+
+  function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+
+  function profile() {
+    if (!profileVisible) {
+      fetch('/profile', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        toggleProfile.innerHTML = `
+          <p>Username: ${data.username}</p>
+          <p>Email: ${data.email}</p>
+          <p>Role: ${data.role}</p>
+          <p>Points: ${data.points}</p>
+          <p>Code: ${data.user_code}</p>
+        `;
+        toggleProfile.style.display = 'block';
+        profileVisible = true;
+      })
+      .catch(() => {
+        alert('Token invalid. Redirecting...');
+        window.location.href = '/';
+      });
+    } else {
+      toggleProfile.style.display = 'none';
+      profileVisible = false;
+    }
+  }
+
+
+function addToOrder(foodId) {
+  const existing = selectedFoods.find(f => f.id === foodId);
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    const food = allFoods.find(f => f.id === foodId);
+    if (!food) return; // safeguard
+
+    selectedFoods.push({
+      id: foodId,
+      name: food.name, // ✅ save name
+      quantity: 1
+    });
+  }
+  renderOrderItems();
+}
+
+function renderOrderItems() {
+  const orderItemsDiv = document.getElementById('order-items');
+  orderItemsDiv.innerHTML = '<h3>Selected Items:</h3>';
+
+  if (selectedFoods.length === 0) {
+    orderItemsDiv.innerHTML += '<p>No items selected yet.</p>';
+    return;
+  }
+
+  selectedFoods.forEach(item => {
+    const itemDiv = document.createElement('div');
+    itemDiv.style.borderBottom = '1px solid #ccc';
+    itemDiv.style.padding = '5px';
+    itemDiv.innerHTML = `
+      <p>${item.name} | Quantity: ${item.quantity}</p>
+    `;
+    orderItemsDiv.appendChild(itemDiv);
+  });
+}
+
+  function confirmUser() {
+    if (currentCustomer) {
+      console.log(currentCustomer)
+      foodsList.style.display = 'block';
+      placeOrderBtn.style.display = 'block';
+    }
+  }
+
+  // Fetch food list immediately but only show after confirmUser()
+  fetch('/foods', {
+  method: 'GET',
+  headers: { Authorization: `Bearer ${token}` }
+})
+.then(res => res.json())
+.then(data => {
+  allFoods = data; // ✅ store all food items
+  foodsList.innerHTML = '';
+
+  data.forEach(food => {
+    const item = document.createElement('div');
+    item.style.border = '1px solid #ccc';
+    item.style.padding = '10px';
+    item.style.marginBottom = '10px';
+    item.innerHTML = `
+      <h3>${food.name}</h3>
+      <p>Description: ${food.description}</p>
+      <p>Price: ₱${food.price}</p>
+      <p>Points: ${food.points}</p>
+      <button onclick="addToOrder(${food.id})">Add to Order</button>
+    `;
+    foodsList.appendChild(item);
+  });
+});
+
+  // Fetch customer by user_code
+  document.getElementById('customerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const customerCode = document.getElementById('customerCodeInput').value;
+
+    fetch(`/customers/${customerCode}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      currentCustomer = data;
+      selectedFoods = []; // reset order
+      document.getElementById('customer-order-confirmation').innerHTML = `
+        <p>Username: ${data.username}</p>
+        <p>Points: ${data.points}</p>
+        <button onclick="confirmUser()">Confirm</button>
+      `;
+    })
+    .catch(() => {
+      alert('Customer not found!');
+      currentCustomer = null;
+      foodsList.style.display = 'none';
+      placeOrderBtn.style.display = 'none';
+      document.getElementById('customer-order-confirmation').innerHTML = '';
+    });
+  });
+
+  // Handle placing the order
+// Handle placing the order (no prompt)
+placeOrderBtn.addEventListener('click', () => {
+  if (!currentCustomer || selectedFoods.length === 0) {
+    alert('No customer selected or no items in order.');
+    return;
+  }
+
+  const payload = {
+    customer_id: currentCustomer.id,
+    food_ids: selectedFoods
+  };
+
+  fetch('/orders/confirm', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Order failed');
+    return res.json();
+  })
+  .then(data => {
+    alert('Order successfully placed! ✅');
+
+    selectedFoods = [];
+    placeOrderBtn.style.display = 'none';
+    foodsList.style.display = 'none';
+    document.getElementById('customer-order-confirmation').innerHTML = '';
+    document.getElementById('customerCodeInput').value = '';
+    document.getElementById('order-items').innerHTML = '';
+    loadTodayOrders();
+    document.getElementById('display-all-orders').style.display = 'block';
+  })
+  .catch(err => {
+    console.error(err);
+    alert('❌ Failed to place order.');
+  });
+});
+
+
+  function loadTodayOrders() {
+  fetch('/orders/today', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById('display-all-orders');
+    container.innerHTML = '<h3>Today\'s Orders</h3>';
+
+    if (data.length === 0) {
+      container.innerHTML += '<p>No orders today.</p>';
+      return;
+    }
+
+    data.forEach(order => {
+      const div = document.createElement('div');
+      div.style.border = '1px solid #ccc';
+      div.style.marginBottom = '10px';
+      div.style.padding = '10px';
+      div.innerHTML = `
+        <p><strong>Order ID:</strong> ${order.id}</p>
+        <p><strong>Customer:</strong> ${order.customer_name || 'N/A'}</p>
+        <p><strong>Status:</strong> ${order.status}</p>
+        <p><strong>Time:</strong> ${new Date(order.created_at).toLocaleTimeString()}</p>
+        <hr />
+      `;
+      container.appendChild(div);
+    });
+  })
+  .catch(err => {
+    console.error('Error loading today\'s orders:', err);
+  });
+}
+
+function confirmUser() {
+  if (currentCustomer) {
+    foodsList.style.display = 'block';
+    placeOrderBtn.style.display = 'block';
+    document.getElementById('display-all-orders').style.display = 'none'; // hide today's orders
+  }
+}
+
+
+
+loadTodayOrders();
+</script>
+
+</body>
+</html>

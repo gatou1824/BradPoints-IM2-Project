@@ -1,0 +1,43 @@
+@token = yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6InN0YWZmIiwiaWF0IjoxNzUyMDQ4OTE0LCJleHAiOjE3NTIxMzUzMTR9.6lnQV1T07tZ9go3EZrFROvbs76r6wyihWi23asvlzh4
+
+### 
+GET http://localhost:51540/1
+
+### Register
+POST http://localhost:51540/auth/register
+Content-Type: application/json
+
+{
+    "email": "omsimimnida1@gmail.com",
+    "password": "1234",
+    "username": "nger",
+    "role": "customer"
+}
+
+### Login
+POST http://localhost:51540/auth/login
+Content-Type: application/json
+
+{
+    "email": "test3@gmail.com",
+    "password": "123123"
+}
+
+### Get Customers (Protected)
+GET http://localhost:51540/customers
+Authorization: Bearer {{token}}
+
+### Get Customers (Protected)
+GET http://localhost:51540/customers/1
+Authorization: Bearer {{token}}
+
+### staff dashboard
+GET http://localhost:51540/dashboard
+Authorization: Bearer {{token}}
+ 
+### get user profile
+GET http://localhost:51540/profile
+Authorization: Bearer {{token}}
+### get user profile
+GET http://localhost:51540/foods
+Authorization: Bearer {{token}}
