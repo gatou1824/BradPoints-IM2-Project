@@ -5,7 +5,7 @@ import { verifyToken } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 router.post('/confirm', verifyToken, (req, res) => {
-  const { customer_id, food_ids, redeem_points } = req.body;
+  const { customer_id, food_ids, reward_code } = req.body;
   const staff_id = req.user.id;
 
   if (!customer_id || !Array.isArray(food_ids) || food_ids.length === 0) {
@@ -29,33 +29,48 @@ router.post('/confirm', verifyToken, (req, res) => {
       }
     });
 
-    // If redeeming, check customer points first
-    if (redeem_points) {
-      const getUserPoints = 'SELECT points FROM users WHERE id = ?';
-      db.query(getUserPoints, [customer_id], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Failed to fetch user points' });
+    // ✅ If there's a reward code, validate and apply it
+    if (reward_code) {
+      const rewardQuery = `
+        SELECT rc.id, rc.reward_id, rc.redeemed, rc.created_at, r.required_points, r.food_id, u.points
+        FROM reward_claims rc
+        JOIN rewards r ON rc.reward_id = r.id
+        JOIN users u ON rc.customer_id = u.id
+        WHERE rc.code = ? AND rc.customer_id = ? AND rc.redeemed = 0
+      `;
 
-        const currentPoints = result[0].points;
-        if (currentPoints < totalPrice) {
-          return res.status(400).json({ message: 'Insufficient points for redemption' });
+      db.query(rewardQuery, [reward_code, customer_id], (err2, result) => {
+        if (err2) return res.status(500).json({ message: 'Error checking reward code' });
+        if (result.length === 0) return res.status(400).json({ message: 'Invalid or already used reward code' });
+
+        const reward = result[0];
+        const claimedAt = new Date(reward.created_at);
+        const now = new Date();
+        if (now - claimedAt > 24 * 60 * 60 * 1000) {
+          return res.status(400).json({ message: 'Reward code has expired' });
         }
 
-        // ✅ Now safe to create order
+        if (reward.points < reward.required_points) {
+          return res.status(400).json({ message: 'Not enough points to redeem reward' });
+        }
+
+        // Proceed to create order and apply reward
         createOrderAndItems({
           staff_id,
           customer_id,
           food_ids,
-          pointsChange: -totalPrice,
+          reward, // reward included
+          pointsChange: totalPoints - reward.required_points,
           res
         });
       });
-
     } else {
-      // Not redeeming, add points
+      // No reward used, just create order normally
       createOrderAndItems({
         staff_id,
         customer_id,
         food_ids,
+        reward: null,
         pointsChange: totalPoints,
         res
       });
@@ -63,8 +78,9 @@ router.post('/confirm', verifyToken, (req, res) => {
   });
 });
 
+
 // ✅ Helper function to create order only if validation passed
-function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, res }) {
+function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, reward, res }) {
   const createOrder = 'INSERT INTO orders (staff_id, customer_id) VALUES (?, ?)';
   db.query(createOrder, [staff_id, customer_id], (err, result) => {
     if (err) return res.status(500).json({ message: 'Error creating order' });
@@ -76,19 +92,83 @@ function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, re
     db.query(insertItems, [values], (err) => {
       if (err) return res.status(500).json({ message: 'Failed to add items' });
 
-      const updateUser = `
-        UPDATE users 
-        SET points = points + ?, visit_count = visit_count + 1 
-        WHERE id = ?
-      `;
-      db.query(updateUser, [pointsChange, customer_id], () => {
-        res.json({ order_id: orderId });
-      });
+      // Add reward item if applicable
+      const addRewardItem = reward
+        ? new Promise((resolve, reject) => {
+            const rewardInsert = `
+              INSERT INTO order_items (order_id, food_id, quantity) VALUES (?, ?, 1)
+            `;
+            db.query(rewardInsert, [orderId, reward.food_id], (err2) => {
+              if (err2) return reject('Failed to add reward item');
+              resolve();
+            });
+          })
+        : Promise.resolve();
+
+      addRewardItem
+        .then(() => {
+          const updateUser = `
+            UPDATE users SET points = points + ?, visit_count = visit_count + 1 WHERE id = ?
+          `;
+          db.query(updateUser, [pointsChange, customer_id], (err3) => {
+            if (err3) return res.status(500).json({ message: 'Failed to update user' });
+
+            if (reward) {
+              const markUsed = 'UPDATE reward_claims SET redeemed = 1 WHERE id = ?';
+              db.query(markUsed, [reward.id], (err4) => {
+                if (err4) return res.status(500).json({ message: 'Failed to mark reward as used' });
+
+                res.json({ message: 'Order placed with reward!', order_id: orderId });
+              });
+            } else {
+              res.json({ message: 'Order placed successfully!', order_id: orderId });
+            }
+          });
+        })
+        .catch((e) => {
+          return res.status(500).json({ message: e });
+        });
     });
   });
 }
 
 
+router.post('/redeem', verifyToken, (req, res) => {
+  const { customer_id, code } = req.body;
+  const staff_id = req.user.id;
+
+  const query = `
+    SELECT rc.id, rc.reward_id, rc.used, r.food_id
+    FROM reward_claims rc
+    JOIN rewards r ON rc.reward_id = r.id
+    WHERE rc.code = ? AND rc.customer_id = ?
+  `;
+
+  db.query(query, [code, customer_id], (err, result) => {
+    if (err) return res.status(500).json({ message: 'DB error' });
+    if (result.length === 0 || result[0].used)
+      return res.status(400).json({ message: 'Invalid or already used code' });
+
+    const reward = result[0];
+    const orderQuery = 'INSERT INTO orders (staff_id, customer_id) VALUES (?, ?)';
+    
+    db.query(orderQuery, [staff_id, customer_id], (err, result2) => {
+      if (err) return res.status(500).json({ message: 'Error creating order' });
+
+      const orderId = result2.insertId;
+      const itemInsert = `
+        INSERT INTO order_items (order_id, food_id, quantity)
+        VALUES (?, ?, 1)
+      `;
+
+      db.query(itemInsert, [orderId, reward.food_id], () => {
+        const markUsed = 'UPDATE reward_claims SET used = 1 WHERE id = ?';
+        db.query(markUsed, [reward.id]);
+        res.json({ message: 'Redeemed successfully!', order_id: orderId });
+      });
+    });
+  });
+});
 
 router.get('/today', verifyToken, (req, res) => {
   const query = `
@@ -105,13 +185,16 @@ router.get('/today', verifyToken, (req, res) => {
 });
 
 // GET /orders/recent
-router.get('/orders/recent', verifyToken, (req, res) => {
+router.get('/recent', verifyToken, (req, res) => {
   const userId = req.user.id;
 
   const query = `
     SELECT o.id
     FROM orders o
-    WHERE o.customer_id = ? AND DATE(o.created_at) = CURDATE()
+    WHERE o.customer_id = ? 
+      AND NOT EXISTS (
+        SELECT 1 FROM feedback f WHERE f.order_id = o.id
+      )
     ORDER BY o.created_at DESC
     LIMIT 1
   `;
@@ -119,22 +202,34 @@ router.get('/orders/recent', verifyToken, (req, res) => {
   db.query(query, [userId], (err, results) => {
     if (err) return res.status(500).json({ message: 'Error checking recent orders' });
 
-    if (results.length === 0) return res.json({ ordered_today: false });
+    if (results.length === 0) {
+      return res.json({ pending_feedback: false });
+    }
 
-    const orderId = results[0].id;
-
-    // Now check if feedback exists for this order
-    const feedbackQuery = `SELECT id FROM feedback WHERE order_id = ?`;
-    db.query(feedbackQuery, [orderId], (err2, feedbackResults) => {
-      if (err2) return res.status(500).json({ message: 'Error checking feedback' });
-
-      const feedbackGiven = feedbackResults.length > 0;
-
-      res.json({ ordered_today: true, feedback_given: feedbackGiven });
+    res.json({
+      pending_feedback: true,
+      order_id: results[0].id
     });
   });
 });
 
+router.get('/pending-feedback', verifyToken, (req, res) => {
+  const userId = req.user.id;
 
+  const query = `
+    SELECT o.id, o.created_at
+    FROM orders o
+    WHERE o.customer_id = ? 
+      AND NOT EXISTS (
+        SELECT 1 FROM feedback f WHERE f.order_id = o.id
+      )
+    ORDER BY o.created_at DESC
+  `;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Database error' });
+    res.json(results); // returns all orders without feedback
+  });
+});
 
 export default router;

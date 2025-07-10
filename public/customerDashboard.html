@@ -27,11 +27,73 @@
       alert('Access denied or token invalid. Redirecting...');
       window.location.href = '/';
     });
+
+    // On load
+    fetch('/rewards/progress', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const section = document.getElementById('rewards-section');
+      if (!section) return;
+
+      data.forEach(r => {
+        const div = document.createElement('div');
+        div.id = `reward-${r.reward_id}`;  // Inside .forEach loop of /rewards/progress
+        div.style.border = '1px solid #ccc';
+        div.style.margin = '10px 0';
+        div.style.padding = '10px';
+        div.innerHTML = `
+          <p><strong>${r.reward_name} (${r.food_name})</strong></p>
+          <p>Progress: ${r.progress} / ${r.required_points}</p>
+          ${
+            r.claimed_recently
+              ? `<p style="color: green;">Already claimed (expires within 24 hours)</p>`
+              : r.can_claim
+              ? `<button onclick="claimReward(${r.reward_id})">Claim</button>`
+              : `<p style="color: gray;">Not enough points yet</p>`
+          }
+        `;
+
+        section.appendChild(div);
+      });
+    });
+
+function claimReward(id) {
+  fetch(`/rewards/claim/${id}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (!res.ok) {
+      return res.json().then(err => {
+        throw new Error(err.message || 'Failed to claim');
+      });
+    }
+    return res.json();
+  })
+  .then(data => {
+    const rewardContainer = document.querySelector(`#reward-${id}`);
+    if (!rewardContainer) return;
+
+    rewardContainer.innerHTML = `
+      <p><strong>Code:</strong> ${data.code}</p>
+      <p>This code expires in 24 hours. Show this to the cashier upon ordering.</p>
+    `;
+  })
+  .catch(err => {
+    alert(err.message);
+    console.error(err);
+  });
+}
+
+
   </script>
 </head>
 <body>
   <h1>Welcome to the Customer Dashboard!</h1>
   <p id="tokenDisplay"></p>
+
   <div>
     <button onclick="profile()">Profile</button>
     <div id="toggle-profile" style="display: none;"></div>
@@ -55,11 +117,15 @@
     <p id="feedbackStatus"></p>
   </div>
 
-
+  <div id="rewards-section">
+    <h2>Available Rewards</h2>
+  </div>
 
   <script>
     const toggleProfile = document.getElementById('toggle-profile');
     let profileVisible = false;
+    let currentOrderId = null;
+    let activeOrderId = null;
 
     document.getElementById('tokenDisplay').textContent = `Your token: ${token}`;
 
@@ -101,6 +167,63 @@
       }
     }
 
+document.getElementById('feedbackForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const message = document.getElementById('feedbackMessage').value;
+
+  fetch('/feedback/sendFeedback', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ order_id: activeOrderId, message })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('feedbackStatus').textContent = data.message;
+    document.getElementById('feedbackMessage').value = '';
+    document.getElementById('send-feedback').style.display = 'none';
+    activeOrderId = null;
+  })
+  .catch(err => {
+    document.getElementById('feedbackStatus').textContent = 'Failed to send feedback.';
+    console.error(err);
+  });
+});
+
+
+function checkForRecentOrders() {
+  fetch('/orders/pending-feedback', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (Array.isArray(data) && data.length > 0) {
+      data.forEach(order => {
+        renderFeedbackPrompt(order.id, order.created_at);
+      });
+    }
+  });
+}
+
+function giveFeedback() {
+  document.getElementById('feedbackPrompt').style.display = 'none';
+  document.getElementById('send-feedback').style.display = 'block';
+}
+
+function showFeedbackForm(orderId, btn) {
+  activeOrderId = orderId;
+  document.getElementById('send-feedback').style.display = 'block';
+  btn.parentElement.style.display = 'none'; // hide prompt
+}
+
+function dismissFeedbackPrompt(btn) {
+  btn.parentElement.style.display = 'none'; // hide prompt
+}
+
+function submitFeedback() {
   document.getElementById('feedbackForm').addEventListener('submit', function (e) {
   e.preventDefault();
   const message = document.getElementById('feedbackMessage').value;
@@ -111,51 +234,41 @@
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`
     },
-    body: JSON.stringify({ message })
+    body: JSON.stringify({ message, order_id: currentOrderId }) // 🟢 include order ID
   })
   .then(res => res.json())
   .then(data => {
     document.getElementById('feedbackStatus').textContent = data.message;
     document.getElementById('feedbackMessage').value = '';
+    document.getElementById('send-feedback').style.display = 'none';
+    alert('Send Feedback successfully!');
+    currentOrderId = null;
   })
   .catch(err => {
     document.getElementById('feedbackStatus').textContent = 'Failed to send feedback.';
     console.error(err);
-    });
   });
-
-function checkForRecentOrder() {
-  fetch('/orders/recent', {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.ordered_today && !data.feedback_given) {
-      document.getElementById('feedbackPrompt').style.display = 'block';
-      document.getElementById('feedbackText').textContent =
-        `Today: You ordered from BradDex Talamban Branch. Give feedback?`;
-    }
-  })
-  .catch(err => console.error('Failed to check recent order:', err));
+  });
 }
 
-function giveFeedback() {
-  document.getElementById('feedbackPrompt').style.display = 'none';
-  document.getElementById('send-feedback').style.display = 'block';
+function renderFeedbackPrompt(orderId, orderDate) {
+  const container = document.createElement('div');
+  container.style.border = '1px solid #ccc';
+  container.style.padding = '10px';
+  container.style.marginTop = '10px';
+
+  container.innerHTML = `
+    <p>You ordered from us on ${new Date(orderDate).toLocaleString()} — Give feedback?</p>
+    <button onclick="showFeedbackForm(${orderId}, this)">Yes</button>
+    <button onclick="dismissFeedbackPrompt(this)">No</button>
+  `;
+
+  document.body.appendChild(container);
 }
 
-function dismissFeedback() {
-  document.getElementById('feedbackPrompt').style.display = 'none';
-  // Optionally notify server that feedback was dismissed
-}
 
-function submitFeedback() {
-  document.getElementById('send-feedback').style.display = 'none';
-  alert('Send Feedback successfully!');
-}
 
-checkForRecentOrder();
+checkForRecentOrders();
   </script>
 </body>
 </html>

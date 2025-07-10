@@ -47,6 +47,7 @@
   </div>
   <form id="customerForm">
     <input type="text" id="customerCodeInput" placeholder="Enter customer code" required />
+    <input type="text" id="rewardCodeInput" placeholder="Enter reward code (optional)" />
     <button type="submit">Check Customer</button>
   </form>
   <div id="customer-order-confirmation"></div>
@@ -215,10 +216,14 @@ placeOrderBtn.addEventListener('click', () => {
     return;
   }
 
+  const rewardCode = document.getElementById('rewardCodeInput').value.trim();
+
   const payload = {
     customer_id: currentCustomer.id,
-    food_ids: selectedFoods
+    food_ids: selectedFoods,
+    reward_code: rewardCode !== '' ? rewardCode : undefined // optional
   };
+
 
   fetch('/orders/confirm', {
     method: 'POST',

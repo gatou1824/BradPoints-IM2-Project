@@ -10,6 +10,7 @@ import profileRoutes from './routes/profileRoutes.js'
 import foodRoutes from './routes/foodRoutes.js'
 import orderRoutes from './routes/orderRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js'
+import rewardRoutes from './routes/rewardRoutes.js'
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/profile', profileRoutes)
 app.use('/foods', foodRoutes)
 app.use('/orders', orderRoutes);
 app.use('/feedback', feedbackRoutes);
+app.use('/rewards', rewardRoutes);
 
 
 //Get the file path from the URL of the current module
