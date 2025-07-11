@@ -47,30 +47,40 @@
   </div>
   <form id="customerForm">
     <input type="text" id="customerCodeInput" placeholder="Enter customer code" required />
-    <input type="text" id="rewardCodeInput" placeholder="Enter reward code (optional)" />
     <button type="submit">Check Customer</button>
   </form>
   <div id="customer-order-confirmation"></div>
-  <button id="placeOrderBtn" style="display: none;">Place Order</button>
 
-  <div id="foods-list" style="display: none;">
-    <!-- list of foods autamtically displayed here s-->
+  <div id="reward-code-container" style="display: none;">
+    <input type="text" id="rewardCodeInput" placeholder="Enter reward code (optional)" />
   </div>
+
+  <button id="placeOrderBtn" style="display: none;">Place Order</button>
 
   <div id="order-items">
     <!-- order items get displayed here  -->
+  </div>
+
+  <div id="foods-list" style="display: none;">
+    <!-- list of foods autamtically displayed here s-->
   </div>
 
   <div id="display-all-orders">
     <!-- display all orders made within the day -->
   </div>
 
+
+
+
+
 <script>
   const foodsList = document.getElementById('foods-list');
   const toggleProfile = document.getElementById('toggle-profile');
   const placeOrderBtn = document.getElementById('placeOrderBtn');
   let profileVisible = false;
-  let selectedFoods = [];
+  selectedFoods = [];
+  rewardCodeInput.value = '';
+
   let currentCustomer = null;
 
   document.getElementById('tokenDisplay').textContent = `Your token: ${token}`;
@@ -140,19 +150,21 @@ function renderOrderItems() {
     itemDiv.style.borderBottom = '1px solid #ccc';
     itemDiv.style.padding = '5px';
     itemDiv.innerHTML = `
-      <p>${item.name} | Quantity: ${item.quantity}</p>
+      <p>${item.name}${item.isReward ? ' (Reward)' : ''} | Quantity: ${item.quantity}</p>
     `;
     orderItemsDiv.appendChild(itemDiv);
   });
 }
 
-  function confirmUser() {
-    if (currentCustomer) {
-      console.log(currentCustomer)
+function confirmUser() {
+  if (currentCustomer) {
       foodsList.style.display = 'block';
       placeOrderBtn.style.display = 'block';
+      document.getElementById('display-all-orders').style.display = 'none';
+      document.getElementById('reward-code-container').style.display = 'block'; // 👈 show reward code input
     }
   }
+
 
   // Fetch food list immediately but only show after confirmUser()
   fetch('/foods', {
@@ -202,21 +214,71 @@ function renderOrderItems() {
     .catch(() => {
       alert('Customer not found!');
       currentCustomer = null;
+      selectedFoods = [];
       foodsList.style.display = 'none';
       placeOrderBtn.style.display = 'none';
       document.getElementById('customer-order-confirmation').innerHTML = '';
+      document.getElementById('reward-code-container').style.display = 'none'; // 👈 Hide reward input
     });
+
   });
+
+  function addRewardItemFromCode(code) {
+  if (!code) return;
+
+  fetch(`/rewards/validate/${code}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Invalid reward code');
+    return res.json();
+  })
+  .then(data => {
+    const alreadyExists = selectedFoods.find(item => item.id === data.food.id && item.isReward);
+    if (alreadyExists) return; // avoid duplicate
+
+    selectedFoods.push({
+      id: data.food.id,
+      name: data.food.name,
+      quantity: 1,
+      isReward: true
+    });
+
+    renderOrderItems();
+  })
+  .catch(err => {
+    alert(err.message || 'Failed to validate reward code.');
+    console.error(err);
+  });
+}
+
 
   // Handle placing the order
 // Handle placing the order (no prompt)
 placeOrderBtn.addEventListener('click', () => {
-  if (!currentCustomer || selectedFoods.length === 0) {
-    alert('No customer selected or no items in order.');
+  const rewardCode = document.getElementById('rewardCodeInput').value.trim();
+
+  rewardCodeInput.addEventListener('change', () => {
+  const code = rewardCodeInput.value.trim();
+  if (code !== '') {
+    addRewardItemFromCode(code);
+  }
+});
+
+
+  if (!currentCustomer) {
+    alert('No customer selected.');
     return;
   }
 
-  const rewardCode = document.getElementById('rewardCodeInput').value.trim();
+  if (selectedFoods.length === 0 && rewardCode === '') {
+    alert('No food items selected and no reward code entered.');
+    return;
+  }
+
 
   const payload = {
     customer_id: currentCustomer.id,
@@ -245,13 +307,11 @@ placeOrderBtn.addEventListener('click', () => {
     foodsList.style.display = 'none';
     document.getElementById('customer-order-confirmation').innerHTML = '';
     document.getElementById('customerCodeInput').value = '';
+    document.getElementById('rewardCodeInput').value = ''; // reset input
+    document.getElementById('reward-code-container').style.display = 'none'; // 👈 Hide reward input
     document.getElementById('order-items').innerHTML = '';
     loadTodayOrders();
     document.getElementById('display-all-orders').style.display = 'block';
-  })
-  .catch(err => {
-    console.error(err);
-    alert('❌ Failed to place order.');
   });
 });
 
@@ -292,16 +352,6 @@ placeOrderBtn.addEventListener('click', () => {
     console.error('Error loading today\'s orders:', err);
   });
 }
-
-function confirmUser() {
-  if (currentCustomer) {
-    foodsList.style.display = 'block';
-    placeOrderBtn.style.display = 'block';
-    document.getElementById('display-all-orders').style.display = 'none'; // hide today's orders
-  }
-}
-
-
 
 loadTodayOrders();
 </script>

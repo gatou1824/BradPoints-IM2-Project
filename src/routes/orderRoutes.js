@@ -8,10 +8,53 @@ router.post('/confirm', verifyToken, (req, res) => {
   const { customer_id, food_ids, reward_code } = req.body;
   const staff_id = req.user.id;
 
-  if (!customer_id || !Array.isArray(food_ids) || food_ids.length === 0) {
-    return res.status(400).json({ message: 'Invalid order data' });
+  const hasFoods = Array.isArray(food_ids) && food_ids.length > 0;
+
+  // ✅ Reward-only redemption (no food items but has a valid code)
+  if (!hasFoods && reward_code) {
+    const rewardQuery = `
+      SELECT rc.id, rc.reward_id, rc.redeemed, rc.created_at, r.required_points, r.food_id, u.points
+      FROM reward_claims rc
+      JOIN rewards r ON rc.reward_id = r.id
+      JOIN users u ON rc.customer_id = u.id
+      WHERE rc.code = ? AND rc.customer_id = ? AND rc.redeemed = 0
+    `;
+
+    db.query(rewardQuery, [reward_code, customer_id], (err2, result) => {
+      if (err2) return res.status(500).json({ message: 'Error checking reward code' });
+      if (result.length === 0) return res.status(400).json({ message: 'Invalid or already used reward code' });
+
+      const reward = result[0];
+      const claimedAt = new Date(reward.created_at);
+      const now = new Date();
+      if (now - claimedAt > 24 * 60 * 60 * 1000) {
+        return res.status(400).json({ message: 'Reward code has expired' });
+      }
+
+      if (reward.points < reward.required_points) {
+        return res.status(400).json({ message: 'Not enough points to redeem reward' });
+      }
+
+      // Proceed to create order with only the reward
+      createOrderAndItems({
+        staff_id,
+        customer_id,
+        food_ids: [{ id: reward.food_id, quantity: 1 }],
+        reward,
+        pointsChange: -reward.required_points,
+        res
+      });
+    });
+
+    return; // ❗Exit early, don’t proceed to food query
   }
 
+  // ❌ No foods and no reward code — invalid
+  if (!hasFoods) {
+    return res.status(400).json({ message: 'No food items selected and no reward code provided' });
+  }
+
+  // ✅ If we reach here, it's a normal or food + reward order
   const foodIdsOnly = food_ids.map(item => item.id);
   const getFoodData = 'SELECT id, points, price FROM food WHERE id IN (?)';
 
@@ -29,8 +72,8 @@ router.post('/confirm', verifyToken, (req, res) => {
       }
     });
 
-    // ✅ If there's a reward code, validate and apply it
     if (reward_code) {
+      // Check and apply reward if present
       const rewardQuery = `
         SELECT rc.id, rc.reward_id, rc.redeemed, rc.created_at, r.required_points, r.food_id, u.points
         FROM reward_claims rc
@@ -54,18 +97,17 @@ router.post('/confirm', verifyToken, (req, res) => {
           return res.status(400).json({ message: 'Not enough points to redeem reward' });
         }
 
-        // Proceed to create order and apply reward
         createOrderAndItems({
           staff_id,
           customer_id,
           food_ids,
-          reward, // reward included
+          reward,
           pointsChange: totalPoints - reward.required_points,
           res
         });
       });
     } else {
-      // No reward used, just create order normally
+      // No reward, just create normal order
       createOrderAndItems({
         staff_id,
         customer_id,
@@ -77,6 +119,7 @@ router.post('/confirm', verifyToken, (req, res) => {
     }
   });
 });
+
 
 
 // ✅ Helper function to create order only if validation passed

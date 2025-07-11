@@ -43,17 +43,27 @@
         div.style.border = '1px solid #ccc';
         div.style.margin = '10px 0';
         div.style.padding = '10px';
-        div.innerHTML = `
-          <p><strong>${r.reward_name} (${r.food_name})</strong></p>
-          <p>Progress: ${r.progress} / ${r.required_points}</p>
-          ${
-            r.claimed_recently
-              ? `<p style="color: green;">Already claimed (expires within 24 hours)</p>`
-              : r.can_claim
-              ? `<button onclick="claimReward(${r.reward_id})">Claim</button>`
-              : `<p style="color: gray;">Not enough points yet</p>`
-          }
-        `;
+        const savedCode = localStorage.getItem(`reward-${r.reward_id}`);
+        if (savedCode) {
+          div.innerHTML = `
+            <p><strong>${r.reward_name} (${r.food_name})</strong></p>
+            <p><strong>Code:</strong> ${savedCode}</p>
+            <p>This code expires in 24 hours. Show this to the cashier upon ordering.</p>
+          `;
+        } else {
+          div.innerHTML = `
+            <p><strong>${r.reward_name} (${r.food_name})</strong></p>
+            <p>Progress: ${r.progress} / ${r.required_points}</p>
+            ${
+              r.claimed_recently
+                ? `<p style="color: green;">Already claimed (expires within 24 hours)</p>`
+                : r.can_claim
+                ? `<button onclick="claimReward(${r.reward_id})">Claim</button>`
+                : `<p style="color: gray;">Not enough points yet</p>`
+            }
+          `;
+        }
+
 
         section.appendChild(div);
       });
@@ -80,6 +90,8 @@ function claimReward(id) {
       <p><strong>Code:</strong> ${data.code}</p>
       <p>This code expires in 24 hours. Show this to the cashier upon ordering.</p>
     `;
+    localStorage.setItem(`reward-${id}`, data.code); // 🔐 Save to localStorage
+
   })
   .catch(err => {
     alert(err.message);

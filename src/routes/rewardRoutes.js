@@ -7,34 +7,55 @@ const router = express.Router();
 
 router.get('/progress', verifyToken, (req, res) => {
   const userId = req.user.id;
-const getProgress = `
-  SELECT r.id, r.name, r.required_points, f.name AS food_name, u.points,
-         EXISTS (
-           SELECT 1 FROM reward_claims rc
-           WHERE rc.customer_id = u.id
-           AND rc.reward_id = r.id
-           AND rc.created_at >= NOW() - INTERVAL 24 HOUR
-         ) AS claimed_recently
-  FROM rewards r
-  JOIN food f ON r.food_id = f.id
-  JOIN users u ON u.id = ?
-`;
 
+  const getProgress = `
+    SELECT 
+      r.id AS reward_id,
+      r.name AS reward_name,
+      r.required_points,
+      f.name AS food_name,
+      (
+        SELECT u.points FROM users u WHERE u.id = ?
+      ) AS current_points,
+      (
+        SELECT rc.code 
+        FROM reward_claims rc 
+        WHERE rc.reward_id = r.id 
+          AND rc.customer_id = ?
+          AND rc.created_at >= NOW() - INTERVAL 24 HOUR
+          AND rc.redeemed = 0
+        ORDER BY rc.created_at DESC
+        LIMIT 1
+      ) AS recent_code,
+      EXISTS (
+        SELECT 1 FROM reward_claims rc 
+        WHERE rc.reward_id = r.id 
+          AND rc.customer_id = ?
+          AND rc.created_at >= NOW() - INTERVAL 24 HOUR
+          AND rc.redeemed = 0
+      ) AS claimed_recently
+    FROM rewards r
+    JOIN food f ON r.food_id = f.id
+  `;
 
-  db.query(getProgress, [userId], (err, results) => {
+  db.query(getProgress, [userId, userId, userId], (err, results) => {
     if (err) return res.status(500).json({ message: 'Failed to fetch progress' });
 
-    const formatted = results.map(row => ({
-        reward_id: row.id,
-        reward_name: row.name,
+    const formatted = results.map(row => {
+      const canClaim = row.current_points >= row.required_points && !row.claimed_recently;
+
+      return {
+        reward_id: row.reward_id,
+        reward_name: row.reward_name,
         food_name: row.food_name,
         required_points: row.required_points,
-        current_points: row.points,
-        progress: `${row.points}/${row.required_points}`,
-        can_claim: row.points >= row.required_points && !row.claimed_recently,
-        claimed_recently: !!row.claimed_recently
-    }));
-
+        current_points: row.current_points,
+        progress: `${row.current_points}/${row.required_points}`,
+        can_claim: canClaim,
+        claimed_recently: !!row.claimed_recently,
+        code: row.claimed_recently ? row.recent_code : null
+      };
+    });
 
     res.json(formatted);
   });
