@@ -20,5 +20,20 @@ router.post('/sendFeedback', verifyToken, (req, res) => {
   });
 });
 
+// GET /orders/:id/details
+router.get('/:id/details', verifyToken, (req, res) => {
+  const orderId = req.params.id;
+  const query = `
+    SELECT f.name, oi.quantity
+    FROM order_items oi
+    JOIN food f ON oi.food_id = f.id
+    WHERE oi.order_id = ?
+  `;
+  db.query(query, [orderId], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching order items' });
+    res.json(results);
+  });
+});
+
 
 export default router;

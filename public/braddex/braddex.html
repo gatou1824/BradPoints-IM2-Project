@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BRADDEX STAFF</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="header-bar">
+    <div class="logo-wrapper">
+      <img src="images/logo.jpg" alt="Logo" class="logo">
+    </div>
+    <div class="logout-wrapper">
+      <button class="logout-button">Logout</button>
+      <img src="images/default.jpg" alt="Profile" class="profile-pic">
+    </div>
+  </header>
+
+  <div class="main-grid">
+
+    <!-- LEFT CONTAINER -->
+    <div class="container left-container">
+      <h2>CUSTOMER INFORMATION</h2>
+      <div id="customer-content" style="display: none;">
+        <section class="users">
+          <div class="user-field">
+            <span id="picture"></span>
+          </div>
+          <div class="user-field">
+            <strong>Username:</strong> 
+            <span id="name"></span>
+          </div>
+          <div class="user-field">
+            <strong>Email:</strong>
+            <span id="email"></span>
+          </div>
+          <div class="user-field">
+            <strong>Code:</strong>
+            <span id="code"></span>
+          </div>
+          <div class="user-field">
+            <strong>Points:</strong> 
+            <span id="points"></span>   
+          </div>
+          <button id="hide-btn" class="hide-button">CONFIRM</button>
+        </section>
+      </div>
+    </div>
+
+    <!-- CENTER CONTAINER -->
+    <div class="container center-container">
+      <section class="search">
+        <div class="search-text">
+          <input class="search-input" type="text" placeholder="Enter Customer Code" />
+          <div class="search-buttons">
+            <button>Check Customer</button>
+          </div>
+        </div>
+      </section>
+
+      <!--IMAGE GRID-->
+      <div id="image-grid-container" class="image-grid" style="display: none;">
+        <h2>Select an Item</h2>
+        <div class="grid-wrapper">
+          <img src="images/sample1.jpg" alt="Option 1" />
+          <img src="images/sample2.jpg" alt="Option 2" />
+          <img src="images/sample3.jpg" alt="Option 3" />
+          <img src="images/sample4.jpg" alt="Option 4" />
+          <img src="images/sample5.jpg" alt="Option 5" />
+          <img src="images/sample6.jpg" alt="Option 6" />
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT CONTAINER -->
+    <div class="container right-container">
+      <h2>STAFF USER</h2>
+      <div class="user-field">
+        <strong style="color: #941A1C;">Username:</strong> 
+        <span id="name1"></span>
+      </div>
+      <div class="user-field">
+        <strong style="color: #941A1C;">Email:</strong>
+        <span id="email1"></span>
+      </div>
+      <div class="user-field">
+        <strong style="color: #941A1C;">Code:</strong>
+        <span id="code1"></span>
+      </div>
+      <div class="user-field">
+        <strong style="color: #941A1C;">Role:</strong>
+        <span id="role"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const searchInput = document.querySelector('.search-input');
+    const checkButton = document.querySelector('.search-buttons button');
+    const customerContent = document.getElementById('customer-content');
+    const confirmBtn = document.getElementById("hide-btn");
+    const imageGridContainer = document.getElementById("image-grid-container");
+
+    let userData = null;
+
+    fetch("https://randomuser.me/api/?results=5")
+      .then(response => response.json())
+      .then(data => {
+        userData = data;
+
+        const user1 = userData.results[1];
+        const fullname1 = `${user1.name.title} ${user1.name.first} ${user1.name.last}`;
+        const code1 = user1.id.value || "N/A";
+        const email1 = user1.email;
+        const role = user1.id.name;
+
+        document.getElementById("name1").textContent = fullname1;
+        document.getElementById("code1").textContent = code1;
+        document.getElementById("email1").textContent = email1;
+        document.getElementById("role").textContent = role;
+      })
+      .catch(error => console.error("error: ", error));
+
+    checkButton.addEventListener('click', () => {
+      const value = searchInput.value.trim().toUpperCase();
+
+      if (value === "AAAAA" && userData) {
+        const user = userData.results[0];
+        const fullname = `${user.name.title} ${user.name.first} ${user.name.last}`;
+        const code = user.id.value || "N/A";
+        const email = user.email;
+        const points = user.location.street.number;
+
+        const picture = document.createElement("img");
+        picture.src = user.picture.medium;
+        picture.alt = "User Picture";
+        picture.classList.add("user-pic");
+        const pictureContainer = document.getElementById("picture");
+        pictureContainer.innerHTML = '';
+        pictureContainer.appendChild(picture);
+
+        document.getElementById("name").textContent = fullname;
+        document.getElementById("code").textContent = code;
+        document.getElementById("email").textContent = email;
+        document.getElementById("points").textContent = points;
+
+        customerContent.style.display = "block";
+      } else {
+        customerContent.style.display = "none";
+      }
+    });
+
+    confirmBtn.addEventListener("click", () => {
+      imageGridContainer.style.display = "block";
+    });
+  </script>
+
+</body>
+</html>

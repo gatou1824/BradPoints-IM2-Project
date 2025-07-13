@@ -26,7 +26,7 @@ router.get('/', verifyToken, (req, res) => {
 router.get('/:user_code', verifyToken, (req, res) => {
   const { user_code } = req.params;
 
-  const getUsersQuery = `SELECT username, points, id FROM users WHERE user_code = ?`;
+  const getUsersQuery = `SELECT * FROM users WHERE user_code = ?`;
 
   db.query(getUsersQuery, [user_code], (err, results) => {
     if (err) {
