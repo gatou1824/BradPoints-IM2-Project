@@ -10,7 +10,7 @@ const router = express.Router();
 // Get all customers
 router.get('/', verifyToken, (req, res) => {
 
-    const getUsersQuery = 'SELECT name, points, id FROM food'; // Hide passwords
+    const getUsersQuery = 'SELECT * FROM food'; // Hide passwords
 
     db.query(getUsersQuery, (err, results) => {
         if (err) {

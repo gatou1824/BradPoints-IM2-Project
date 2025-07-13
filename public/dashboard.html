@@ -79,13 +79,12 @@
     }
     #toggle-profile {
       position: fixed;
-      top: 150px;
-      right: 20px;
+      top: 158px;
+      right: 120px;
       width: 350px;
       background: #fff;
       border: 1px solid #ccc;
       border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
       overflow: visible; /* allow avatar to overflow */
       z-index: 999;
       display: none;
@@ -147,45 +146,45 @@
       font-weight: bold;
     }
 
-.customer-inline {
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  padding: 15px;
-  margin-top: 20px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
-  font-size: 14px;
-}
+    .customer-inline {
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+      font-size: 14px;
+    }
 
-.customer-inline span {
-  min-width: 100px;
-  font-weight: bold;
-}
+    .customer-inline span {
+      min-width: 100px;
+      font-weight: bold;
+    }
 
-.customer-inline button {
-  padding: 6px 12px;
-  font-size: 14px;
-  background-color: #dc2626;
-  border: none;
-  border-radius: 5px;
-  color: white;
-  cursor: pointer;
-}
+    .customer-inline button {
+      padding: 6px 12px;
+      font-size: 14px;
+      background-color: #dc2626;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
 
-.customer-inline button:hover {
-  background-color: #b91c1c;
-}
-
-
-
+    .customer-inline button:hover {
+      background-color: #b91c1c;
+    }
 
     main {
       padding: 20px;
+      max-width: 900px; /* adjust as needed */
+      margin: 0 auto;   /* this centers it horizontally */
     }
+
 
     button {
       background-color: #dc2626;
@@ -213,6 +212,25 @@
       border-radius: 6px;
       box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
     }
+
+    #order-items {
+      display: none;
+      position:absolute;
+      top: 158px;
+      left: 100px;
+      width: 350px; min-height: 600px;
+      border: 1px solid rgb(204, 204, 204);
+      padding: 15px; border-radius: 10px;
+      box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 8px;
+      background-color: white;
+    }
+
+    #foods-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* responsive grid */
+      gap: 20px;
+    }
+
 
     h1, h3 {
       color: #b91c1c;
@@ -276,31 +294,43 @@
     </div>
   </header>
 
-  <main>
-    <!-- <p id="tokenDisplay"></p> -->
+<!-- LEFT: Order Items -->
+<div id="order-items">
+  <h3>Selected Items:</h3>
+  <p>No items selected yet.</p>
+</div>
 
-    <div id="toggle-profile" style="display: none; margin-bottom: 20px;">
+<main>
+  <div style="display: flex; justify-content: center; align-items: flex-start; gap: 30px; margin-top: 20px;">
 
+    <div id="toggle-profile"></div>
+
+
+    <!-- RIGHT: Form + Foods + Buttons -->
+    <div style="flex: 1; max-width: 900px;">
+      <form id="customerForm">
+        <input type="text" id="customerCodeInput" placeholder="Enter customer code" required />
+        <button type="submit">Check Customer</button>
+      </form>
+
+      <div id="customer-order-confirmation"></div>
+
+<div id="order-functions" style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+        <div id="reward-code-container" style="display: none;">
+          <input type="text" id="rewardCodeInput" placeholder="Enter reward code (optional)" />
+        </div>
+
+        <button id="placeOrderBtn" style="display: none;">Place Order</button>
+        <button id="cancelOrderBtn" style="display: none; background-color: gray;">Cancel Order</button>
+      </div>
+
+
+      <div id="foods-list" style="display: none; margin-top: 20px;"></div>
+      <div id="display-all-orders" style="margin-top: 30px;"></div>
     </div>
+  </div>
+</main>
 
-    <form id="customerForm">
-      <input type="text" id="customerCodeInput" placeholder="Enter customer code" required />
-      <button type="submit">Check Customer</button>
-    </form>
-
-    <div id="customer-order-confirmation"></div>
-
-    <div id="reward-code-container" style="display: none; margin-top: 15px;">
-      <input type="text" id="rewardCodeInput" placeholder="Enter reward code (optional)" />
-    </div>
-
-    <button id="placeOrderBtn" style="display: none;">Place Order</button>
-    <button id="cancelOrderBtn" style="display: none; background-color: gray;">Cancel Order</button>
-
-    <div id="order-items" style="margin-top: 20px;"></div>
-    <div id="foods-list" style="display: none; margin-top: 20px;"></div>
-    <div id="display-all-orders" style="margin-top: 30px;"></div>
-  </main>
 
 <script>
   const foodsList = document.getElementById('foods-list');
@@ -385,6 +415,7 @@
       const itemDiv = document.createElement('div');
       itemDiv.style.borderBottom = '1px solid #ccc';
       itemDiv.style.padding = '5px';
+      itemDiv.style.marginTop = '5px';
       itemDiv.innerHTML = `<p>${item.name}${item.isReward ? ' (Reward)' : ''} | Quantity: ${item.quantity}</p>`;
       orderItemsDiv.appendChild(itemDiv);
     });
@@ -392,11 +423,12 @@
 
 function confirmUser() {
   if (currentCustomer) {
-    foodsList.style.display = 'block';
+    foodsList.style.display = 'grid';
     placeOrderBtn.style.display = 'block';
     cancelOrderBtn.style.display = 'inline-block';
     document.getElementById('display-all-orders').style.display = 'none';
     document.getElementById('reward-code-container').style.display = 'block';
+    document.getElementById('order-items').style.display = 'block';
 
     const btn = document.getElementById('confirmBtn');
     if (btn) {
@@ -421,8 +453,11 @@ function confirmUser() {
     data.forEach(food => {
       const item = document.createElement('div');
       item.style.border = '1px solid #ccc';
-      item.style.padding = '10px';
-      item.style.marginBottom = '10px';
+      item.style.padding = '15px';
+      item.style.borderRadius = '10px';
+      item.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+      item.style.backgroundColor = 'white';
+
       item.innerHTML = `
         <h3>${food.name}</h3>
         <p>Description: ${food.description}</p>
@@ -613,7 +648,7 @@ document.getElementById('customer-order-confirmation').innerHTML = `
   document.getElementById('customerCodeInput').value = '';
   document.getElementById('customer-order-confirmation').innerHTML = '';
   document.getElementById('reward-code-container').style.display = 'none';
-  document.getElementById('order-items').innerHTML = '';
+  document.getElementById('order-items').style.display = 'none'
   document.getElementById('display-all-orders').style.display = 'block';
 
   });
