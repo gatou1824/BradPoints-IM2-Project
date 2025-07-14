@@ -3,16 +3,198 @@
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard</title>
-  <script>
-    // Run this before loading the full page content
-    const token = localStorage.getItem('token');
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #ffffff;
+      color: #333;
+    }
 
+    header {
+      background-color: white; /* changed from red */
+      border-bottom: 4px solid #b91c1c; /* red bottom border */
+      padding: 20px 330px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header img {
+      height: 70px; /* 👈 limits the logo height */
+      object-fit: contain;
+    }
+
+
+    .profile-container {
+      position: relative;
+      margin-left: 15px;
+    }
+
+    .profile-icon {
+      width: 70px;
+      height: 70px;
+      background-color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b91c1c;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 32px; /* 👈 this makes the emoji grow */
+    }
+
+
+    .dropdown {
+      position: absolute;
+      right: 0;
+      top: 45px;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      min-width: 140px; /* 👈 ensures enough space */
+      white-space: nowrap; /* 👈 prevents text wrapping */
+      z-index: 1000;
+    }
+
+    .dropdown a {
+      padding: 10px 15px;
+      color: #b91c1c;
+      text-decoration: none;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      display: block;
+    }
+
+    .dropdown a:last-child {
+      border-bottom: none;
+    }
+
+    .dropdown a:hover {
+      background-color: #ffeaea;
+    }
+    #toggle-profile {
+      position: fixed;
+      top: 134px;
+      right: 10px;
+      width: 315px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 16px;
+      overflow: visible; /* allow avatar to overflow */
+      z-index: 999;
+      display: none;
+      font-family: Arial, sans-serif;
+      padding-top: 75px; /* 👈 add this to make room for avatar */
+    }
+
+    .profile-header {
+      background-color: #b91c1c;
+      color: white;
+      text-align: center;
+      padding: 40px 20px 20px;
+      position: relative;
+    }
+
+    .profile-avatar {
+      width: 100px; /* ⬆ bigger */
+      height: 100px; /* ⬆ bigger */
+      font-size: 42px; /* ⬆ bigger emoji */
+      top: -50px; /* adjust for larger size */
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+    }
+
+    .profile-header h2 {
+      margin: 10px 0 0;
+      font-size: 20px;
+    }
+
+    .profile-header span {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .profile-body {
+      padding: 20px;
+      font-size: 14px;
+    }
+
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 0 10px;
+    }
+
+    .profile-label {
+      color: #555;
+    }
+
+    .profile-value {
+      font-weight: bold;
+    }
+
+.tab-buttons {
+  display: flex; /* changed from inline-flex */
+  border: 2px solid #b91c1c;
+  border-radius: 9999px;
+  overflow: hidden;
+  background-color: #b91c1c;
+}
+
+    .tab-buttons button {
+      background-color: #b91c1c;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 9999px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .tab-buttons button.active {
+      background-color: white;
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    .reward-card {
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .reward-info {
+      max-width: 70%;
+    }
+
+    .reward-actions {
+      margin-left: auto;
+    }
+
+  </style>
+  <script>
+    const token = localStorage.getItem('token');
     if (!token) {
       alert('No token found. Redirecting...');
       window.location.href = '/';
     }
 
-    // Immediately check the role
     fetch('/profile', {
       method: 'GET',
       headers: {
@@ -23,187 +205,256 @@
       if (!res.ok) throw new Error('Unauthorized');
       return res.json();
     })
+    .then(data => {
+      if (data.role !== 'customer') {
+        window.location.href = '/dashboard';
+      }
+    })
     .catch(err => {
       alert('Access denied or token invalid. Redirecting...');
       window.location.href = '/';
     });
 
-    // On load
-    fetch('/rewards/progress', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => res.json())
-    .then(data => {
-      const section = document.getElementById('rewards-section');
-      if (!section) return;
 
-      data.forEach(r => {
-        const div = document.createElement('div');
-        div.id = `reward-${r.reward_id}`;  // Inside .forEach loop of /rewards/progress
-        div.style.border = '1px solid #ccc';
-        div.style.margin = '10px 0';
-        div.style.padding = '10px';
-        const savedCode = localStorage.getItem(`reward-${r.reward_id}`);
-        if (savedCode) {
-          div.innerHTML = `
-            <p><strong>${r.reward_name} (${r.food_name})</strong></p>
-            <p><strong>Code:</strong> ${savedCode}</p>
-            <p>This code expires in 24 hours. Show this to the cashier upon ordering.</p>
-          `;
-        } else {
-          div.innerHTML = `
-            <p><strong>${r.reward_name} (${r.food_name})</strong></p>
-            <p>Progress: ${r.progress} / ${r.required_points}</p>
-            ${
-              r.claimed_recently
-                ? `<p style="color: green;">Already claimed (expires within 24 hours)</p>`
-                : r.can_claim
-                ? `<button onclick="claimReward(${r.reward_id})">Claim</button>`
-                : `<p style="color: gray;">Not enough points yet</p>`
-            }
-          `;
-        }
+document.addEventListener('DOMContentLoaded', () => {
+  const profileDropdown = document.getElementById('profileDropdown');
+  const profileIcon = document.getElementById('profileIcon');
+  const toggleProfile = document.getElementById('toggle-profile');
 
-
-        section.appendChild(div);
-      });
-    });
-
-function claimReward(id) {
-  fetch(`/rewards/claim/${id}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(res => {
-    if (!res.ok) {
-      return res.json().then(err => {
-        throw new Error(err.message || 'Failed to claim');
-      });
-    }
-    return res.json();
-  })
-  .then(data => {
-    const rewardContainer = document.querySelector(`#reward-${id}`);
-    if (!rewardContainer) return;
-
-    rewardContainer.innerHTML = `
-      <p><strong>Code:</strong> ${data.code}</p>
-      <p>This code expires in 24 hours. Show this to the cashier upon ordering.</p>
-    `;
-    localStorage.setItem(`reward-${id}`, data.code); // 🔐 Save to localStorage
-
-  })
-  .catch(err => {
-    alert(err.message);
-    console.error(err);
+  profileIcon.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleProfile.style.display = 'none';
+    profileVisible = false;
+    profileDropdown.style.display = profileDropdown.style.display === 'flex' ? 'none' : 'flex';
   });
-}
 
+  document.addEventListener('click', (e) => {
+    // Close dropdown if click is outside of profileIcon and profileDropdown
+    if (!profileDropdown.contains(e.target) && !profileIcon.contains(e.target)) {
+      profileDropdown.style.display = 'none';
+    }
+
+    // Close toggle-profile if click is outside
+    if (!toggleProfile.contains(e.target) && !profileIcon.contains(e.target)) {
+      toggleProfile.style.display = 'none';
+    }
+  });
+});
 
   </script>
 </head>
 <body>
-  <h1>Welcome to the Customer Dashboard!</h1>
-  <p id="tokenDisplay"></p>
+  <header>
+    <img src="/images/logo.jpg" alt="">
+    <div class="profile-container">
+      <div class="profile-icon" id="profileIcon">👤</div>
+      <div class="dropdown" id="profileDropdown">
+        <a href="#" onclick="profile()">View Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
+      </div>
+    </div>
+  </header>
 
-  <div>
-    <button onclick="profile()">Profile</button>
-    <div id="toggle-profile" style="display: none;"></div>
-    <button onclick="logout()">Logout</button>
+  <div id="toggle-profile"></div>
+
+  <main style="padding: 20px; max-width: 1210px; margin: 0 auto;">
+
+  <div id="points-section" style="text-align:center; background-color: #fde8e8; padding: 40px 20px;">
+    <div id="points-circle" style="width: 120px; height: 120px; border: 2px solid #b91c1c; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 36px; color: #b91c1c;">
+      <!-- Points will be inserted here -->
+    </div>
+    <div id="user-code" style="background-color: #b91c1c; color: white; display: inline-block; margin-top: 10px; padding: 6px 16px; border-radius: 9999px; font-weight: bold;">
+      <!-- Code goes here -->
+    </div>
   </div>
 
-  <!-- ✅ Feedback prompt appears first -->
-  <div id="feedbackPrompt" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 20px;">
-    <p id="feedbackText"></p>
-    <button onclick="giveFeedback()">Yes</button>
-    <button onclick="dismissFeedback()">No</button>
+<div style="display: flex; justify-content: center; margin-top: 20px;">
+  <div class="tab-buttons">
+    <button id="tab-rewards" onclick="showTab('rewards')">Rewards</button>
+    <button id="tab-notifications" onclick="showTab('notifications')">Notifications</button>
+    <button id="tab-history" onclick="showTab('history')">History</button>
+    <button id="tab-feedback" onclick="showTab('feedback')">Feedback</button>
+  </div>
+</div>
+
+
+
+  <div id="rewards" style="margin-top: 20px;"></div>
+  <div id="notifications" style="display:none;"></div>
+  <div id="history" style="display:none;"></div>
+  <div id="feedback" style="display:none;">
+    <div id="send-feedback" style="display: none;">
+      <h2>Send Feedback</h2>
+      <form id="feedbackForm">
+        <textarea id="feedbackMessage" rows="4" cols="50" placeholder="Enter your feedback..." required></textarea><br>
+        <button onclick="submitFeedback()" type="submit">Submit</button>
+      </form>
+      <p id="feedbackStatus"></p>
+    </div>
   </div>
 
-  <!-- ✅ Hidden feedback form appears if Yes is clicked -->
-  <div id="send-feedback" style="display: none;">
-    <h2>Send Feedback</h2>
-    <form id="feedbackForm">
-      <textarea id="feedbackMessage" rows="4" cols="50" placeholder="Enter your feedback..." required></textarea><br>
-      <button onclick="submitFeedback()" type="submit">Submit</button>
-    </form>
-    <p id="feedbackStatus"></p>
-  </div>
 
-  <div id="rewards-section">
-    <h2>Available Rewards</h2>
-  </div>
+  </main>
 
-  <script>
+    <script>
     const toggleProfile = document.getElementById('toggle-profile');
-    let profileVisible = false;
     let currentOrderId = null;
     let activeOrderId = null;
 
-    document.getElementById('tokenDisplay').textContent = `Your token: ${token}`;
+    // Load customer profile (points + code)
+fetch('/profile', {
+  method: 'GET',
+  headers: { Authorization: `Bearer ${token}` }
+})
+.then(res => res.json())
+.then(data => {
+  document.getElementById('points-circle').textContent = data.points;
+  document.getElementById('user-code').textContent = data.user_code;
+})
+.catch(err => {
+  console.error('Failed to fetch profile:', err);
+});
+
+// Load rewards
+fetch('/rewards/progress', {
+  headers: { Authorization: `Bearer ${token}` }
+})
+.then(res => res.json())
+.then(data => {
+  const rewardsContainer = document.getElementById('rewards');
+  rewardsContainer.innerHTML = ''; // clear previous entries
+  data.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'reward-card';
+
+    const info = document.createElement('div');
+    info.className = 'reward-info';
+
+    const actions = document.createElement('div');
+    actions.className = 'reward-actions';
+
+    const savedCode = localStorage.getItem(`reward-${r.reward_id}`);
+    if (savedCode) {
+      info.innerHTML = `
+        <strong>${r.reward_name}</strong><br>
+        <span>Code: ${savedCode}</span><br>
+        <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
+      `;
+    } else {
+      info.innerHTML = `
+        <strong>${r.reward_name}</strong><br>
+        <span>Progress: ${r.progress} / ${r.required_points}</span>
+      `;
+      if (r.claimed_recently) {
+        actions.innerHTML = `<p style="color: green;">Already claimed</p>`;
+      } else if (r.can_claim) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Redeem';
+        btn.style.padding = '8px 16px';
+        btn.style.backgroundColor = '#b91c1c';
+        btn.style.color = 'white';
+        btn.style.border = 'none';
+        btn.style.borderRadius = '5px';
+        btn.style.cursor = 'pointer';
+        btn.onclick = () => claimReward(r.reward_id, btn);
+        actions.appendChild(btn);
+      } else {
+        actions.innerHTML = `<p style="color: gray;">Not enough points yet</p>`;
+      }
+    }
+
+    div.appendChild(info);
+    div.appendChild(actions);
+    rewardsContainer.appendChild(div);
+  });
+})
+.catch(err => {
+  console.error('Failed to load rewards:', err);
+});
+
+// Claim logic
+function claimReward(id, btn) {
+  fetch(`/rewards/claim/${id}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const parent = btn.parentElement;
+    parent.innerHTML = `
+      <strong>Code:</strong> ${data.code}<br>
+      <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
+    `;
+    localStorage.setItem(`reward-${id}`, data.code);
+  })
+  .catch(err => {
+    alert('Error claiming reward.');
+    console.error(err);
+  });
+}
+
+// Tabs
+function showTab(tabId) {
+  ['rewards', 'notifications', 'history', 'feedback'].forEach(id => {
+    const el = document.getElementById(id);
+    const tab = document.getElementById(`tab-${id}`);
+    if (el) el.style.display = (id === tabId) ? 'block' : 'none';
+    if (tab) tab.classList.toggle('active', id === tabId);
+  });
+
+  if (tabId === 'history') {
+    loadHistory();
+  }
+}
+
+
+window.onload = () => showTab('rewards');
 
     function logout() {
       localStorage.removeItem('token');
       window.location.href = '/';
     }
 
+    let profileVisible = false;
+
     function profile() {
-      if (!profileVisible) {
-        fetch('/profile', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-        .then(res => {
-          if (!res.ok) throw new Error('Unauthorized');
-          return res.json();
-        })
-        .then(data => {
-          toggleProfile.innerHTML = `
-            <p>Username: ${data.username}</p>
-            <p>Email: ${data.email}</p>
-            <p>Role: ${data.role}</p>
-            <p>Points: ${data.points}</p>
-            <p>Code: ${data.user_code}</p>
-          `;
-          toggleProfile.style.display = 'block';
-          profileVisible = true;
-        })
-        .catch(err => {
-          alert('Token invalid or expired. Redirecting...');
-          window.location.href = '/';
-        });
-      } else {
-        toggleProfile.style.display = 'none';
-        profileVisible = false;
-      }
+      document.getElementById('profileDropdown').style.display = 'none';
+      fetch('/profile', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const toggleProfile = document.getElementById('toggle-profile');
+        toggleProfile.innerHTML = `
+          <div class="profile-header">
+            <div class="profile-avatar">👤</div>
+            <h2>${data.username}</h2>
+            <span>${data.user_code}</span>
+          </div>
+          <div class="profile-body">
+            <div class="profile-row">
+              <span class="profile-label">Email</span>
+              <span class="profile-value">${data.email}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Role</span>
+              <span class="profile-value">${data.role}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Points</span>
+              <span class="profile-value">${data.points}</span>
+            </div>
+          </div>
+        `;
+        toggleProfile.style.display = 'block';
+        profileVisible = true;
+      })
+      .catch(() => {
+        alert('Token invalid. Redirecting...');
+        window.location.href = '/';
+      });
     }
-
-document.getElementById('feedbackForm').addEventListener('submit', function (e) {
-  e.preventDefault();
-  const message = document.getElementById('feedbackMessage').value;
-
-  fetch('/feedback/sendFeedback', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ order_id: activeOrderId, message })
-  })
-  .then(res => res.json())
-  .then(data => {
-    document.getElementById('feedbackStatus').textContent = data.message;
-    document.getElementById('feedbackMessage').value = '';
-    document.getElementById('send-feedback').style.display = 'none';
-    activeOrderId = null;
-  })
-  .catch(err => {
-    document.getElementById('feedbackStatus').textContent = 'Failed to send feedback.';
-    console.error(err);
-  });
-});
-
 
 function checkForRecentOrders() {
   fetch('/orders/pending-feedback', {
@@ -232,7 +483,8 @@ function showFeedbackForm(orderId, btn) {
 }
 
 function dismissFeedbackPrompt(btn) {
-  btn.parentElement.style.display = 'none'; // hide prompt
+  const container = btn.closest('.reward-card');
+  if (container) container.remove();
 }
 
 function submitFeedback() {
@@ -265,19 +517,92 @@ function submitFeedback() {
 
 function renderFeedbackPrompt(orderId, orderDate) {
   const container = document.createElement('div');
-  container.style.border = '1px solid #ccc';
-  container.style.padding = '10px';
-  container.style.marginTop = '10px';
+  container.className = 'reward-card';
+  container.setAttribute('data-order-id', orderId); // 🟢 Add this line
 
-  container.innerHTML = `
-    <p>You ordered from us on ${new Date(orderDate).toLocaleString()} — Give feedback?</p>
-    <button onclick="showFeedbackForm(${orderId}, this)">Yes</button>
-    <button onclick="dismissFeedbackPrompt(this)">No</button>
+  const info = document.createElement('div');
+  info.className = 'reward-info';
+  info.innerHTML = `
+    <strong>Feedback Request</strong><br>
+    <span>You ordered from us on ${new Date(orderDate).toLocaleString()} — would you like to leave feedback?</span>
   `;
 
-  document.body.appendChild(container);
+  const actions = document.createElement('div');
+  actions.className = 'reward-actions';
+
+  const yesBtn = document.createElement('button');
+  yesBtn.textContent = 'Yes';
+  yesBtn.style = btnStyle();
+  yesBtn.onclick = () => showFeedbackForm(orderId, yesBtn);
+
+  const noBtn = document.createElement('button');
+  noBtn.textContent = 'No';
+  noBtn.style = btnStyle(true);
+  noBtn.onclick = () => dismissFeedbackPrompt(noBtn);
+
+  actions.appendChild(yesBtn);
+  actions.appendChild(noBtn);
+  container.appendChild(info);
+  container.appendChild(actions);
+  document.getElementById('feedback').appendChild(container);
 }
 
+function btnStyle(isNo = false) {
+  return `
+    padding: 8px 16px;
+    background-color: ${isNo ? '#e5e7eb' : '#b91c1c'};
+    color: ${isNo ? '#333' : 'white'};
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    ${isNo ? 'margin-left: 10px;' : ''}
+  `;
+}
+
+function loadHistory() {
+  fetch('/rewards/history', {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const historyContainer = document.getElementById('history');
+    historyContainer.innerHTML = '';
+
+    if (data.length === 0) {
+      historyContainer.innerHTML = '<p style="text-align:center;">No transaction history yet.</p>';
+      return;
+    }
+
+    data.forEach(h => {
+      const div = document.createElement('div');
+      div.className = 'reward-card';
+
+      const info = document.createElement('div');
+      info.className = 'reward-info';
+
+      if (h.type === 'Reward') {
+        info.innerHTML = `
+          <strong>🎁 ${h.item}</strong><br>
+          <span>Code: ${h.code}</span><br>
+          <small>Claimed at: ${new Date(h.date).toLocaleString()}</small><br>
+          <small>Status: ${h.redeemed ? '✅ Redeemed' : '❌ Not redeemed yet'}</small>
+        `;
+      } else {
+        info.innerHTML = `
+          <strong>🛒 ${h.item}</strong><br>
+          <small>Ordered at: ${new Date(h.date).toLocaleString()}</small>
+        `;
+      }
+
+      div.appendChild(info);
+      historyContainer.appendChild(div);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to load full history:', err);
+    document.getElementById('history').innerHTML = '<p style="color:red;">Unable to fetch history.</p>';
+  });
+}
 
 
 checkForRecentOrders();

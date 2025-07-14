@@ -7,14 +7,13 @@
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      background-color: #fff5f5;
       color: #333;
     }
 
     header {
       background-color: white; /* changed from red */
       border-bottom: 4px solid #b91c1c; /* red bottom border */
-      padding: 20px 30px;
+      padding: 20px 330px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -79,9 +78,9 @@
     }
     #toggle-profile {
       position: fixed;
-      top: 158px;
-      right: 120px;
-      width: 350px;
+      top: 134px;
+      right: 10px;
+      width: 315px;
       background: #fff;
       border: 1px solid #ccc;
       border-radius: 16px;
@@ -181,8 +180,8 @@
 
     main {
       padding: 20px;
-      max-width: 900px; /* adjust as needed */
-      margin: 0 auto;   /* this centers it horizontally */
+      width: 1210px; 
+      margin: 0 auto; 
     }
 
 
@@ -216,9 +215,10 @@
     #order-items {
       display: none;
       position:absolute;
-      top: 158px;
-      left: 100px;
-      width: 350px; min-height: 600px;
+      top: 138px;
+      left: 25px;
+      width: 275px;
+      min-height: 725px;
       border: 1px solid rgb(204, 204, 204);
       padding: 15px; border-radius: 10px;
       box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 8px;
@@ -301,13 +301,11 @@
 </div>
 
 <main>
-  <div style="display: flex; justify-content: center; align-items: flex-start; gap: 30px; margin-top: 20px;">
-
     <div id="toggle-profile"></div>
 
 
     <!-- RIGHT: Form + Foods + Buttons -->
-    <div style="flex: 1; max-width: 900px;">
+    <div style="flex: 1;">
       <form id="customerForm">
         <input type="text" id="customerCodeInput" placeholder="Enter customer code" required />
         <button type="submit">Check Customer</button>
@@ -328,7 +326,6 @@
       <div id="foods-list" style="display: none; margin-top: 20px;"></div>
       <div id="display-all-orders" style="margin-top: 30px;"></div>
     </div>
-  </div>
 </main>
 
 

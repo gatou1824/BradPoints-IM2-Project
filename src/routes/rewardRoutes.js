@@ -61,7 +61,6 @@ router.get('/progress', verifyToken, (req, res) => {
   });
 });
 
-
 router.post('/claim/:id', verifyToken, (req, res) => {
   const userId = req.user.id;
   const rewardId = req.params.id;
@@ -102,7 +101,6 @@ router.post('/claim/:id', verifyToken, (req, res) => {
     });
   });
 });
-
 
 router.post('/redeem', verifyToken, (req, res) => {
   const { customer_id, code } = req.body;
@@ -154,5 +152,48 @@ router.post('/redeem', verifyToken, (req, res) => {
   });
 });
 
+router.get('/history', verifyToken, (req, res) => {
+  const userId = req.user.id;
+
+const query = `
+  SELECT 
+    o.id AS id,
+    GROUP_CONCAT(f.name SEPARATOR ', ') AS item,
+    NULL AS code,
+    o.created_at AS date,
+    'Order' AS type,
+    NULL AS redeemed
+  FROM orders o
+  JOIN order_items oi ON o.id = oi.order_id
+  JOIN food f ON oi.food_id = f.id
+  WHERE o.customer_id = ?
+  GROUP BY o.id
+
+  UNION ALL
+
+  SELECT 
+    rc.id AS id,
+    r.name AS item,
+    rc.code AS code,
+    rc.created_at AS date,
+    'Reward' AS type,
+    rc.redeemed AS redeemed
+  FROM reward_claims rc
+  JOIN rewards r ON rc.reward_id = r.id
+  WHERE rc.customer_id = ?
+
+  ORDER BY date DESC
+`;
+
+
+  db.query(query, [userId, userId], (err, results) => {
+    if (err) {
+      console.error('Error fetching full history:', err.sqlMessage || err.message || err);
+      return res.status(500).json({ message: 'Failed to fetch full history' });
+    }
+
+    res.json(results);
+  });
+});
 
 export default router;
