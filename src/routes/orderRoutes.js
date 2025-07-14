@@ -260,20 +260,18 @@ router.get('/pending-feedback', verifyToken, (req, res) => {
   const userId = req.user.id;
 
   const query = `
-    SELECT o.id, o.created_at
-    FROM orders o
-    WHERE o.customer_id = ? 
-      AND NOT EXISTS (
-        SELECT 1 FROM feedback f WHERE f.order_id = o.id
-      )
-    ORDER BY o.created_at DESC
+    SELECT * FROM orders 
+    WHERE customer_id = ? 
+      AND feedback_dismissed = FALSE
+      AND feedback_given = FALSE
   `;
 
   db.query(query, [userId], (err, results) => {
     if (err) return res.status(500).json({ message: 'Database error' });
-    res.json(results); // returns all orders without feedback
+    res.json(results);
   });
 });
+
 
 // GET /orders/:id/details
 router.get('/:id/details', verifyToken, (req, res) => {

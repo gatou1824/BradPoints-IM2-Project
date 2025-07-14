@@ -484,13 +484,35 @@ function showFeedbackForm(orderId, btn) {
 
 function dismissFeedbackPrompt(btn) {
   const container = btn.closest('.reward-card');
-  if (container) container.remove();
-}
+  const orderId = container.getAttribute('data-order-id');
 
-function submitFeedback() {
-  document.getElementById('feedbackForm').addEventListener('submit', function (e) {
+  fetch(`/feedback/dismissFeedback/${orderId}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    container.remove(); // ✅ visually remove it
+  })
+  .catch(err => {
+    console.error('Failed to dismiss feedback:', err);
+  });
+}
+    
+
+
+// Fix: Submit feedback using activeOrderId and bind listener properly
+document.getElementById('feedbackForm').addEventListener('submit', function (e) {
   e.preventDefault();
+
   const message = document.getElementById('feedbackMessage').value;
+
+  if (!activeOrderId) {
+    alert('No order selected for feedback.');
+    return;
+  }
 
   fetch('/feedback/sendFeedback', {
     method: 'POST',
@@ -498,22 +520,23 @@ function submitFeedback() {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`
     },
-    body: JSON.stringify({ message, order_id: currentOrderId }) // 🟢 include order ID
+    body: JSON.stringify({ message, order_id: activeOrderId })
   })
-  .then(res => res.json())
-  .then(data => {
-    document.getElementById('feedbackStatus').textContent = data.message;
-    document.getElementById('feedbackMessage').value = '';
-    document.getElementById('send-feedback').style.display = 'none';
-    alert('Send Feedback successfully!');
-    currentOrderId = null;
-  })
-  .catch(err => {
-    document.getElementById('feedbackStatus').textContent = 'Failed to send feedback.';
-    console.error(err);
-  });
-  });
-}
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('feedbackStatus').textContent = data.message;
+      document.getElementById('feedbackMessage').value = '';
+      document.getElementById('send-feedback').style.display = 'none';
+      alert('Feedback sent successfully!');
+      activeOrderId = null;
+      checkForRecentOrders(); // Refresh prompts
+    })
+    .catch(err => {
+      document.getElementById('feedbackStatus').textContent = 'Failed to send feedback.';
+      console.error(err);
+    });
+});
+
 
 function renderFeedbackPrompt(orderId, orderDate) {
   const container = document.createElement('div');

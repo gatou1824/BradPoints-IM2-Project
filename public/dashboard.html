@@ -570,11 +570,12 @@ document.getElementById('customer-order-confirmation').innerHTML = `
       selectedFoods = [];
       placeOrderBtn.style.display = 'none';
       foodsList.style.display = 'none';
+      cancelOrderBtn.style.display = 'none';
       document.getElementById('customer-order-confirmation').innerHTML = '';
       document.getElementById('customerCodeInput').value = '';
       rewardCodeInput.value = '';
       document.getElementById('reward-code-container').style.display = 'none';
-      document.getElementById('order-items').innerHTML = '';
+      document.getElementById('order-items').style.display = 'none';
       loadTodayOrders();
       document.getElementById('display-all-orders').style.display = 'block';
     });
@@ -681,8 +682,6 @@ document.getElementById('customer-order-confirmation').innerHTML = `
     container.style.display = 'block';
   });
 }
-
-
 
   loadTodayOrders();
 </script>
