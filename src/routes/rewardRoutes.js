@@ -8,38 +8,46 @@ const router = express.Router();
 router.get('/progress', verifyToken, (req, res) => {
   const userId = req.user.id;
 
-  const getRewardsProgress = `
-SELECT
-  r.id AS reward_id,
-  r.name AS reward_name,
-  r.required_points,
-  u.points AS progress,
-  rc.code,
-  rc.created_at AS claimed_at
-FROM rewards r
-CROSS JOIN users u
-LEFT JOIN reward_claims rc 
-  ON rc.customer_id = u.id AND rc.reward_id = r.id
-WHERE u.id = ?
-GROUP BY r.id
+const getRewardsProgress = `
+  SELECT
+    r.id AS reward_id,
+    r.name AS reward_name,
+    r.required_points,
+    u.points AS user_points,
+    rc.code,
+    rc.created_at AS claimed_at,
+    rc.redeemed
+  FROM rewards r
+  LEFT JOIN users u ON u.id = ?
+  LEFT JOIN reward_claims rc ON rc.customer_id = ? AND rc.reward_id = r.id
+  GROUP BY r.id
+`;
 
-  `;
+db.query(getRewardsProgress, [userId, userId], (err, results) => {
+  if (err) return res.status(500).json({ message: 'Failed to fetch progress' });
 
-  db.query(getRewardsProgress, [userId, userId], (err, results) => {
-    if (err) return res.status(500).json({ message: 'Failed to fetch progress' });
+  const formatted = results.map(row => {
+    const now = new Date();
+    const claimedAt = row.claimed_at ? new Date(row.claimed_at) : null;
+    const expired = claimedAt && ((now - claimedAt) / 1000 > 86400); // 24 hours
+    // const expired = claimedAt && ((now - claimedAt) / 1000 > 120); // 60 seconds = 2 minute
+    const claimedRecently = claimedAt && !expired && !row.redeemed;
 
-    const formatted = results.map(row => ({
+    return {
       reward_id: row.reward_id,
       reward_name: row.reward_name,
       required_points: row.required_points,
-      progress: row.progress,
-      claimed_recently: !!row.claimed_at && isRecent(row.claimed_at),
-      can_claim: row.progress >= row.required_points && !row.code,
-      code: row.code || null
-    }));
-
-    res.json(formatted); // ✅ This should now be a proper array
+      progress: row.user_points || 0,
+      code: !expired && !row.redeemed ? row.code : null,
+      redeemed: !!row.redeemed,
+      claimed_recently: claimedRecently,
+      can_claim: (row.user_points >= row.required_points) && (!claimedRecently),
+    };
   });
+
+  res.json(formatted);
+});
+
 });
 
 function isRecent(date) {

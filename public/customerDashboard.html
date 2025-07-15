@@ -337,35 +337,46 @@ fetch('/rewards/progress', {
   const actions = document.createElement('div');
   actions.className = 'reward-actions';
 
-  if (r.code) {
+if (r.code) {
+  if (r.redeemed) {
+    // Reward was already claimed and redeemed by staff
+    info.innerHTML = `
+      <strong>${r.reward_name}</strong><br>
+      <span style="color: green;">✅ Reward already used</span>
+    `;
+  } else {
+    // Code still valid
     info.innerHTML = `
       <strong>${r.reward_name}</strong><br>
       <span>Code: ${r.code}</span><br>
       <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
     `;
-  } else {
-    info.innerHTML = `
-      <strong>${r.reward_name}</strong><br>
-      <span>Progress: ${r.progress} / ${r.required_points}</span>
-    `;
-
-    if (r.claimed_recently) {
-      actions.innerHTML = `<p style="color: green;">Already claimed</p>`;
-    } else if (r.can_claim) {
-      const btn = document.createElement('button');
-      btn.textContent = 'Redeem';
-      btn.style.padding = '8px 16px';
-      btn.style.backgroundColor = '#b91c1c';
-      btn.style.color = 'white';
-      btn.style.border = 'none';
-      btn.style.borderRadius = '5px';
-      btn.style.cursor = 'pointer';
-      btn.onclick = () => claimReward(r.reward_id, btn);
-      actions.appendChild(btn);
-    } else {
-      actions.innerHTML = `<p style="color: gray;">Not enough points yet</p>`;
-    }
   }
+} else {
+  // No valid code (expired or not yet claimed)
+  info.innerHTML = `
+    <strong>${r.reward_name}</strong><br>
+    <span>Progress: ${r.progress} / ${r.required_points}</span>
+  `;
+
+  if (r.claimed_recently) {
+    actions.innerHTML = `<p style="color: green;">Already claimed</p>`;
+  } else if (r.can_claim) {
+    const btn = document.createElement('button');
+    btn.textContent = 'Redeem';
+    btn.style.padding = '8px 16px';
+    btn.style.backgroundColor = '#b91c1c';
+    btn.style.color = 'white';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '5px';
+    btn.style.cursor = 'pointer';
+    btn.onclick = () => claimReward(r.reward_id, btn);
+    actions.appendChild(btn);
+  } else {
+    actions.innerHTML = `<p style="color: gray;">Not enough points yet</p>`;
+  }
+}
+
 
   div.appendChild(info);
   div.appendChild(actions);
