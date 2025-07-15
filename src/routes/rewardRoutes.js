@@ -8,58 +8,48 @@ const router = express.Router();
 router.get('/progress', verifyToken, (req, res) => {
   const userId = req.user.id;
 
-  const getProgress = `
-    SELECT 
-      r.id AS reward_id,
-      r.name AS reward_name,
-      r.required_points,
-      f.name AS food_name,
-      (
-        SELECT u.points FROM users u WHERE u.id = ?
-      ) AS current_points,
-      (
-        SELECT rc.code 
-        FROM reward_claims rc 
-        WHERE rc.reward_id = r.id 
-          AND rc.customer_id = ?
-          AND rc.created_at >= NOW() - INTERVAL 24 HOUR
-          AND rc.redeemed = 0
-        ORDER BY rc.created_at DESC
-        LIMIT 1
-      ) AS recent_code,
-      EXISTS (
-        SELECT 1 FROM reward_claims rc 
-        WHERE rc.reward_id = r.id 
-          AND rc.customer_id = ?
-          AND rc.created_at >= NOW() - INTERVAL 24 HOUR
-          AND rc.redeemed = 0
-      ) AS claimed_recently
-    FROM rewards r
-    JOIN food f ON r.food_id = f.id
+  const getRewardsProgress = `
+SELECT
+  r.id AS reward_id,
+  r.name AS reward_name,
+  r.required_points,
+  u.points AS progress,
+  rc.code,
+  rc.created_at AS claimed_at
+FROM rewards r
+CROSS JOIN users u
+LEFT JOIN reward_claims rc 
+  ON rc.customer_id = u.id AND rc.reward_id = r.id
+WHERE u.id = ?
+GROUP BY r.id
+
   `;
 
-  db.query(getProgress, [userId, userId, userId], (err, results) => {
+  db.query(getRewardsProgress, [userId, userId], (err, results) => {
     if (err) return res.status(500).json({ message: 'Failed to fetch progress' });
 
-    const formatted = results.map(row => {
-      const canClaim = row.current_points >= row.required_points && !row.claimed_recently;
+    const formatted = results.map(row => ({
+      reward_id: row.reward_id,
+      reward_name: row.reward_name,
+      required_points: row.required_points,
+      progress: row.progress,
+      claimed_recently: !!row.claimed_at && isRecent(row.claimed_at),
+      can_claim: row.progress >= row.required_points && !row.code,
+      code: row.code || null
+    }));
 
-      return {
-        reward_id: row.reward_id,
-        reward_name: row.reward_name,
-        food_name: row.food_name,
-        required_points: row.required_points,
-        current_points: row.current_points,
-        progress: `${row.current_points}/${row.required_points}`,
-        can_claim: canClaim,
-        claimed_recently: !!row.claimed_recently,
-        code: row.claimed_recently ? row.recent_code : null
-      };
-    });
-
-    res.json(formatted);
+    res.json(formatted); // ✅ This should now be a proper array
   });
 });
+
+function isRecent(date) {
+  const claimedDate = new Date(date);
+  const now = new Date();
+  const diff = now - claimedDate;
+  return diff <= 24 * 60 * 60 * 1000; // within 24 hours
+}
+
+
 
 router.post('/claim/:id', verifyToken, (req, res) => {
   const userId = req.user.id;
@@ -78,7 +68,7 @@ router.post('/claim/:id', verifyToken, (req, res) => {
     const { points, required_points } = result[0];
     if (points < required_points) return res.status(400).json({ message: 'Not enough points' });
 
-    // Check if already claimed in the past 24 hours
+    // ✅ Check if this user already claimed this reward in the last 24 hours
     const checkExistingClaim = `
       SELECT * FROM reward_claims
       WHERE customer_id = ? AND reward_id = ? AND created_at >= NOW() - INTERVAL 24 HOUR
@@ -86,12 +76,20 @@ router.post('/claim/:id', verifyToken, (req, res) => {
 
     db.query(checkExistingClaim, [userId, rewardId], (err2, existing) => {
       if (err2) return res.status(500).json({ message: 'Error checking previous claim' });
-      if (existing.length > 0) return res.status(400).json({ message: 'Already claimed in the last 24 hours' });
 
+      if (existing.length > 0) {
+        // Already claimed in last 24 hours — return the same code
+        return res.json({ 
+          message: 'Already claimed within 24 hours',
+          code: existing[0].code 
+        });
+      }
+
+      // ✅ Otherwise, create a new claim for this user
       const code = nanoid(10);
       const insertClaim = `
-        INSERT INTO reward_claims (customer_id, reward_id, code)
-        VALUES (?, ?, ?)
+        INSERT INTO reward_claims (customer_id, reward_id, code, created_at, redeemed)
+        VALUES (?, ?, ?, NOW(), 0)
       `;
 
       db.query(insertClaim, [userId, rewardId, code], (err3) => {
@@ -101,6 +99,7 @@ router.post('/claim/:id', verifyToken, (req, res) => {
     });
   });
 });
+
 
 router.post('/redeem', verifyToken, (req, res) => {
   const { customer_id, code } = req.body;
@@ -152,48 +151,6 @@ router.post('/redeem', verifyToken, (req, res) => {
   });
 });
 
-router.get('/history', verifyToken, (req, res) => {
-  const userId = req.user.id;
 
-const query = `
-  SELECT 
-    o.id AS id,
-    GROUP_CONCAT(f.name SEPARATOR ', ') AS item,
-    NULL AS code,
-    o.created_at AS date,
-    'Order' AS type,
-    NULL AS redeemed
-  FROM orders o
-  JOIN order_items oi ON o.id = oi.order_id
-  JOIN food f ON oi.food_id = f.id
-  WHERE o.customer_id = ?
-  GROUP BY o.id
-
-  UNION ALL
-
-  SELECT 
-    rc.id AS id,
-    r.name AS item,
-    rc.code AS code,
-    rc.created_at AS date,
-    'Reward' AS type,
-    rc.redeemed AS redeemed
-  FROM reward_claims rc
-  JOIN rewards r ON rc.reward_id = r.id
-  WHERE rc.customer_id = ?
-
-  ORDER BY date DESC
-`;
-
-
-  db.query(query, [userId, userId], (err, results) => {
-    if (err) {
-      console.error('Error fetching full history:', err.sqlMessage || err.message || err);
-      return res.status(500).json({ message: 'Failed to fetch full history' });
-    }
-
-    res.json(results);
-  });
-});
 
 export default router;

@@ -323,49 +323,53 @@ fetch('/rewards/progress', {
 .then(data => {
   const rewardsContainer = document.getElementById('rewards');
   rewardsContainer.innerHTML = ''; // clear previous entries
+  if (!Array.isArray(data)) {
+    console.error('Expected array, got:', data);
+    return;
+  } 
   data.forEach(r => {
-    const div = document.createElement('div');
-    div.className = 'reward-card';
+  const div = document.createElement('div');
+  div.className = 'reward-card';
 
-    const info = document.createElement('div');
-    info.className = 'reward-info';
+  const info = document.createElement('div');
+  info.className = 'reward-info';
 
-    const actions = document.createElement('div');
-    actions.className = 'reward-actions';
+  const actions = document.createElement('div');
+  actions.className = 'reward-actions';
 
-    const savedCode = localStorage.getItem(`reward-${r.reward_id}`);
-    if (savedCode) {
-      info.innerHTML = `
-        <strong>${r.reward_name}</strong><br>
-        <span>Code: ${savedCode}</span><br>
-        <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
-      `;
+  if (r.code) {
+    info.innerHTML = `
+      <strong>${r.reward_name}</strong><br>
+      <span>Code: ${r.code}</span><br>
+      <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
+    `;
+  } else {
+    info.innerHTML = `
+      <strong>${r.reward_name}</strong><br>
+      <span>Progress: ${r.progress} / ${r.required_points}</span>
+    `;
+
+    if (r.claimed_recently) {
+      actions.innerHTML = `<p style="color: green;">Already claimed</p>`;
+    } else if (r.can_claim) {
+      const btn = document.createElement('button');
+      btn.textContent = 'Redeem';
+      btn.style.padding = '8px 16px';
+      btn.style.backgroundColor = '#b91c1c';
+      btn.style.color = 'white';
+      btn.style.border = 'none';
+      btn.style.borderRadius = '5px';
+      btn.style.cursor = 'pointer';
+      btn.onclick = () => claimReward(r.reward_id, btn);
+      actions.appendChild(btn);
     } else {
-      info.innerHTML = `
-        <strong>${r.reward_name}</strong><br>
-        <span>Progress: ${r.progress} / ${r.required_points}</span>
-      `;
-      if (r.claimed_recently) {
-        actions.innerHTML = `<p style="color: green;">Already claimed</p>`;
-      } else if (r.can_claim) {
-        const btn = document.createElement('button');
-        btn.textContent = 'Redeem';
-        btn.style.padding = '8px 16px';
-        btn.style.backgroundColor = '#b91c1c';
-        btn.style.color = 'white';
-        btn.style.border = 'none';
-        btn.style.borderRadius = '5px';
-        btn.style.cursor = 'pointer';
-        btn.onclick = () => claimReward(r.reward_id, btn);
-        actions.appendChild(btn);
-      } else {
-        actions.innerHTML = `<p style="color: gray;">Not enough points yet</p>`;
-      }
+      actions.innerHTML = `<p style="color: gray;">Not enough points yet</p>`;
     }
+  }
 
-    div.appendChild(info);
-    div.appendChild(actions);
-    rewardsContainer.appendChild(div);
+  div.appendChild(info);
+  div.appendChild(actions);
+  rewardsContainer.appendChild(div);
   });
 })
 .catch(err => {
@@ -378,14 +382,21 @@ function claimReward(id, btn) {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` }
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) throw new Error('Claim failed');
+    return res.json();
+  })
   .then(data => {
-    const parent = btn.parentElement;
-    parent.innerHTML = `
+    const card = btn.closest('.reward-card');
+    const info = card.querySelector('.reward-info');
+    const actions = card.querySelector('.reward-actions');
+
+    info.innerHTML = `
       <strong>Code:</strong> ${data.code}<br>
-      <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
+      <small>${data.message}</small>
     `;
-    localStorage.setItem(`reward-${id}`, data.code);
+
+    actions.innerHTML = ''; // optionally remove buttons
   })
   .catch(err => {
     alert('Error claiming reward.');
@@ -479,8 +490,12 @@ function giveFeedback() {
 function showFeedbackForm(orderId, btn) {
   activeOrderId = orderId;
   document.getElementById('send-feedback').style.display = 'block';
-  btn.parentElement.style.display = 'none'; // hide prompt
+
+  // ⬇️ This hides the entire prompt container after clicking "Yes"
+  const container = btn.closest('.reward-card');
+  if (container) container.remove();
 }
+
 
 function dismissFeedbackPrompt(btn) {
   const container = btn.closest('.reward-card');
@@ -500,7 +515,7 @@ function dismissFeedbackPrompt(btn) {
     console.error('Failed to dismiss feedback:', err);
   });
 }
-    
+
 
 
 // Fix: Submit feedback using activeOrderId and bind listener properly
