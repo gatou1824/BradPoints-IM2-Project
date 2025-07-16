@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reports & Feedback - Admin</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <link rel="stylesheet" href="adminStyles.css">
+    </head>
+    <body>
+        <div class="d-flex">
+            <div id="sidebar"></div>
+
+            <div class="main-content flex-grow-1 ml-3 container">
+                <div class="container mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2>Customer Management</h2>
+                        <button class="btn btn-primary custom-red-card">Add Customer</button>
+                    </div>
+
+                      <div class="row mb-3">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" placeholder="Search by name, email, or phone..." disabled>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" disabled>
+                                <option selected>Filter by Points</option>
+                                <option>Below 500</option>
+                                <option>500 - 1000</option>
+                                <option>Above 1000</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 text-right">
+                            <button class="btn btn-outline-secondary" disabled>Apply Filters</button>
+                        </div>
+                    </div>
+
+                    <table class="table table-hover">
+                        <thead class="thread-red">
+                        <tr>
+                            <th>#</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Points</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <!-- Hardcoded customer entries -->
+                        <tr>
+                            <td>1</td>
+                            <td>Maria De Leon</td>
+                            <td>maria@example.com</td>
+                            <td>09123456789</td>
+                            <td>540</td>
+                            <td>
+                            <button class="btn btn-sm btn-danger">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>John Reyes</td>
+                            <td>john@example.com</td>
+                            <td>09987654321</td>
+                            <td>1200</td>
+                            <td>
+                            <button class="btn btn-sm btn-danger">Delete</button>
+                            </td>
+                        </tr>
+                        <!-- Add more dummy entries as needed -->
+                        </tbody>
+                    </table>
+                </div>
+
+
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="quick-actions">
+                            <h3>Quick Actions</h3>
+                            <button class="btn btn-secondary" onclick="location.href='reports.html'">View Latest Feedback</button>
+                            <button class="btn btn-success">Add Pending Action</button>
+                            <button class="btn btn-success" onclick="location.href='incents.html'">Add New Reward</button>
+                        </div>
+                    </div>
+                </div>   
+            </div>
+     
+        </div>
+    </body>
+
+    <script>
+        fetch('nav.html')
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById('sidebar').innerHTML = html;
+            document.body.style.visibility = 'visible';
+        })
+    </script>
+
+                    
+</html>

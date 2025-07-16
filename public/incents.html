@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reports & Feedback - Admin</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <link rel="stylesheet" href="adminStyles.css">
+    </head>
+    <body>
+        <div class="d-flex">
+            <div id="sidebar"></div>
+            <div class="main-content flex-grow-1 ml-3 container">
+                <div class="container mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Incentives & Rewards Management</h2>
+                    <button class="btn btn-success">Add New Reward</button>
+                </div>
+
+                <!-- Search & Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                    <input type="text" class="form-control" placeholder="Search rewards...">
+                    </div>
+                    <div class="col-md-3">
+                    <select class="form-control">
+                        <option selected>Filter</option>
+                        <option>Points Required</option>
+                        <option>Date Added</option>
+                        <option># of Redemptions</option>
+                    </select>
+                    </div>
+                    <div class="col-md-3 text-right">
+                    <button class="btn btn-outline-secondary">Apply Filters</button>
+                    </div>
+                </div>
+
+                <!-- Rewards Table -->
+                <table class="table table-hover">
+                    <thead class="thead-red">
+                    <tr>
+                        <th>#</th>
+                        <th>Reward Name</th>
+                        <th>Points Required</th>
+                        <th>Date Added</th>
+                        <th># of Redemptions</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- Hardcoded example -->
+                    <tr>
+                        <td>1</td>
+                        <td>Free Cheeseburger</td>
+                        <td>18</td>
+                        <td>2025-08-01</td>
+                        <td>457</td>
+                        <td>
+                        <button class="btn btn-sm btn-primary">Edit</button>
+                        <button class="btn btn-sm btn-danger">Delete</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Free Iced Tea</td>
+                        <td>6</td>
+                        <td>2025-07-20</td>
+                        <td>457</td>
+                        <td>
+                        <button class="btn btn-sm btn-primary">Edit</button>
+                        <button class="btn btn-sm btn-danger">Delete</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Free Halo-Halo</td>
+                        <td>15</td>
+                        <td>2025-06-01</td>
+                        <td>457</td>
+                        <td>
+                        <button class="btn btn-sm btn-primary" disabled>Edit</button>
+                        <button class="btn btn-sm btn-danger">Delete</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="quick-actions">
+                            <h3>Quick Actions</h3>
+                            <button class="btn btn-primary" onclick="location.href='custmgt.html'">Add New Customer</button>
+                            <button class="btn btn-secondary" onclick="location.href='reports.html'">View Latest Feedback</button>
+                            <button class="btn btn-success">Add Pending Action</button>
+                        </div>
+                    </div>
+                </div>    
+            </div>
+     
+        </div>
+    </body>
+
+    <script>
+        fetch('nav.html')
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById('sidebar').innerHTML = html;
+            document.body.style.visibility = 'visible';
+        })
+    </script>
+
+                    
+</html>
