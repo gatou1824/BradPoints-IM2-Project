@@ -652,7 +652,7 @@ document.getElementById('claimRewardBtn').addEventListener('click', () => {
 });
 
 
-  placeOrderBtn.addEventListener('click', () => {
+placeOrderBtn.addEventListener('click', () => {
     const rewardCode = rewardCodeInput.value.trim();
     if (rewardCode !== '') addRewardItemFromCode(rewardCode);
     if (!currentCustomer) {
@@ -680,21 +680,20 @@ document.getElementById('claimRewardBtn').addEventListener('click', () => {
       if (!res.ok) throw new Error('Order failed');
       return res.json();
     })
-  .then(() => {
-    alert('Order successfully placed! ✅');
-    selectedFoods = [];
-    placeOrderBtn.style.display = 'none';
-    foodsList.style.display = 'none';
-    cancelOrderBtn.style.display = 'none';
-    document.getElementById('customer-order-confirmation').innerHTML = '';
-    document.getElementById('customerCodeInput').value = '';
-    rewardCodeInput.value = '';
-    document.getElementById('reward-code-container').style.display = 'none';
-    document.getElementById('order-items').style.display = 'none';
-    document.getElementById('order-items').innerHTML = '<h3>Selected Items:</h3><p>No items selected yet.</p>'; // 👈 clear items here
-    loadTodayOrders();
-    document.getElementById('display-all-orders').style.display = 'block';
-  });
+    .then(() => {
+      alert('Order successfully placed! ✅');
+      selectedFoods = [];
+      placeOrderBtn.style.display = 'none';
+      foodsList.style.display = 'none';
+      cancelOrderBtn.style.display = 'none';
+      document.getElementById('customer-order-confirmation').innerHTML = '';
+      document.getElementById('customerCodeInput').value = '';
+      rewardCodeInput.value = '';
+      document.getElementById('reward-code-container').style.display = 'none';
+      document.getElementById('order-items').style.display = 'none';
+      loadTodayOrders();
+      document.getElementById('display-all-orders').style.display = 'block';
+    });
   });
 
   function loadTodayOrders() {

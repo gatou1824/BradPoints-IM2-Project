@@ -45,7 +45,7 @@ router.post('/confirm', verifyToken, (req, res) => {
         customer_id,
         food_ids: filteredFoodItems,
         reward,
-        pointsChange: -reward.required_points,
+        pointsChange: totalPoints - reward.required_points,
         res
       });
 
@@ -129,6 +129,8 @@ router.post('/confirm', verifyToken, (req, res) => {
   });
 });
 
+
+
 // ✅ Helper function to create order only if validation passed
 function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, reward, res }) {
   const createOrder = 'INSERT INTO orders (staff_id, customer_id) VALUES (?, ?)';
@@ -164,7 +166,6 @@ function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, re
             if (err3) return res.status(500).json({ message: 'Failed to update user' });
 
             if (reward) {
-              console.log('Reward object:', reward); // 👈 Add this line
               const markUsed = 'UPDATE reward_claims SET redeemed = 1 WHERE id = ?';
               db.query(markUsed, [reward.rc_id], (err4) => {
                 if (err4) return res.status(500).json({ message: 'Failed to mark reward as used' });
@@ -182,7 +183,6 @@ function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, re
     });
   });
 }
-
 router.get('/today', verifyToken, (req, res) => {
   const query = `
     SELECT o.id, u.username AS customer_name, o.status, o.created_at
