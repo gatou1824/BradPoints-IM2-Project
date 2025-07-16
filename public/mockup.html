@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard | BRADDEX</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-dark bg-dark px-4 mb-4">
+    <span class="navbar-brand mb-0 h1">BRADDEX Admin Dashboard</span>
+    <span class="text-white">Welcome, Admin Jane</span>
+  </nav>
+
+  <div class="container-fluid px-4">
+
+    <!-- KPIs -->
+    <div class="row g-4 mb-4">
+      <div class="col-md-2 col-6">
+        <div class="card text-bg-primary text-center p-3">
+          <div>Total Customers</div>
+          <h5>3,492</h5>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="card text-bg-secondary text-center p-3">
+          <div>Inactive Users</div>
+          <h5>834</h5>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="card text-bg-success text-center p-3">
+          <div>Points Issued</div>
+          <h5>120,000</h5>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="card text-bg-danger text-center p-3">
+          <div>Points Redeemed</div>
+          <h5>75,340</h5>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="card text-bg-warning text-center p-3">
+          <div>Active Rewards</div>
+          <h5>8</h5>
+        </div>
+      </div>
+      <div class="col-md-2 col-6">
+        <div class="card text-bg-info text-center p-3">
+          <div>New Feedback</div>
+          <h5>6</h5>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAPHS -->
+    <div class="row mb-4">
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header">Points Earned Over Time</div>
+          <div class="card-body">
+            <canvas id="earnedChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header">Points Redeemed Over Time</div>
+          <div class="card-body">
+            <canvas id="redeemedChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY + ALERTS -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">Recent Activity</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">Maria D. redeemed "Free Coffee"</li>
+            <li class="list-group-item">New Feedback: "QR scanner didn’t work"</li>
+            <li class="list-group-item">Low redemption rate for new users</li>
+            <li class="list-group-item">Admin John updated reward tiers</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-warning">
+          <div class="card-header bg-warning text-dark">Pending Actions</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">Review 3 unprocessed feedback entries</li>
+            <li class="list-group-item">2 reward items expiring soon</li>
+            <li class="list-group-item">Suspicious account flagged</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHORTCUTS -->
+    <div class="row mb-5">
+      <div class="col-md-3">
+        <button class="btn btn-outline-primary w-100">➕ Add New Customer</button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-success w-100">🏷️ Create New Reward</button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-info w-100">💬 View Latest Feedback</button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-secondary w-100">📤 Export Reports</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-dark text-white text-center py-3">
+    © 2025 BRADDEX | Admin Panel v1.0
+  </footer>
+
+  <script>
+    const ctx1 = document.getElementById('earnedChart');
+    new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+          label: 'Points Earned',
+          data: [3000, 5000, 4000, 7000, 6000, 8000],
+          borderColor: 'green',
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    const ctx2 = document.getElementById('redeemedChart');
+    new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+          label: 'Points Redeemed',
+          data: [2000, 4000, 3000, 5000, 5500, 6000],
+          borderColor: 'red',
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+  </script>
+
+</body>
+</html>
