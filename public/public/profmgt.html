@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reports & Feedback - Admin</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <link rel="stylesheet" href="adminStyles.css">
+    </head>
+    <body>
+        <div class="d-flex">
+            <div id="sidebar"></div>
+            <div class="main-content flex-grow-1 ml-3 container">
+
+
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <button class="btn btn-primary">Add New Customer</button>
+                    <button class="btn btn-secondary">View All Loyalty Points</button>
+                    <button class="btn btn-success">Send Notification</button>
+                </div>
+            </div>
+     
+        </div>
+    </body>
+
+    <script>
+        fetch('nav.html')
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById('sidebar').innerHTML = html;
+            document.body.style.visibility = 'visible';
+        })
+    </script>
+
+                    
+</html>
