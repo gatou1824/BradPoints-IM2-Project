@@ -10,7 +10,7 @@
 <body>
     <div class="d-flex">
         <div id="sidebar" class="custom-red-card"></div> 
-        <div class="main-content flex-grow-1 ml-3 container">
+        <div class="main-content flex-grow-1 ml-3 container-fluid">
             
             <div class="row">
                 <div class="col-md-12">
@@ -65,17 +65,19 @@
             <div class="row mb-4">
                 <div class="col-md-6">
                     <div class="card border-danger">
-                    <div class="card-header custom-red-card">Recent Activity</div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">Maria D. redeemed "Steamed Rice"</li>
-                        <li class="list-group-item">New Feedback: "Nawala akong points"</li>
-                        <li class="list-group-item">Admin John updated profile "Diana"</li>
-                        <li class="list-group-item">Admin John added Pending Action "Suspicious account flagged"</li>
-                    </ul>
+                        <div class="card-header custom-red-card">Recent Activity</div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">Maria D. redeemed "Steamed Rice"</li>
+                            <li class="list-group-item">New Feedback: "Nawala akong points"</li>
+                            <li class="list-group-item">Admin John updated profile "Diana"</li>
+                            <li class="list-group-item">Admin John added Pending Action "Suspicious account flagged"</li>
+                        </ul>
                     </div>
                 </div>
+
+                <!-- pending actions -->
                 <div class="col-md-6">
-                    <div class="card border-danger">
+                    <div class="card border-danger scrollable-card-body" style="max-height: 400px;">
                         <div class="card-header custom-red-card">Pending Actions</div>
                         <ul class="list-group list-group-flush" id="pending-list">
                         <li class="list-group-item d-flex justify-content-between align-items-center">

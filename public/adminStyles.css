@@ -3,7 +3,7 @@ body {
     margin: 0;
     padding: 0;
     display: flex;
-    visibility: visible;
+    visibility: hidden;
 }
 .sidebar {
     width: 250px;
@@ -105,4 +105,8 @@ th {
 .scrollable-graph-x canvas{
     width: 1000px;
     max-width: none;
+}
+
+.d-flex{
+    width: 100%;
 }
