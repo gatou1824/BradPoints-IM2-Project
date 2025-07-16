@@ -369,6 +369,8 @@
   const rewardCodeInput = document.getElementById('rewardCodeInput');
   const cancelOrderBtn = document.getElementById('cancelOrderBtn');
 
+  let validatedRewardCode = null;
+
   let profileVisible = false;
   let selectedFoods = [];
   rewardCodeInput.value = '';
@@ -607,6 +609,8 @@ function addRewardItemFromCode(code) {
     return;
   }
 
+  console.log(code)
+
   fetch(`/rewards/validate/${code}`, {
     method: 'GET',
     headers: {
@@ -627,6 +631,8 @@ function addRewardItemFromCode(code) {
       alert('Reward already claimed.');
       return;
     }
+
+    validatedRewardCode = code;
 
     selectedFoods.push({
       id: data.food.id,
@@ -663,11 +669,12 @@ placeOrderBtn.addEventListener('click', () => {
       alert('No food items selected and no reward code entered.');
       return;
     }
-    const payload = {
-      customer_id: currentCustomer.id,
-      food_ids: selectedFoods,
-      reward_code: rewardCode !== '' ? rewardCode : undefined
-    };
+const payload = {
+  customer_id: currentCustomer.id,
+  food_ids: selectedFoods,
+  reward_code: validatedRewardCode // ✅ Use the stored, verified code
+};
+    console.log(payload)
     fetch('/orders/confirm', {
       method: 'POST',
       headers: {
@@ -691,6 +698,7 @@ placeOrderBtn.addEventListener('click', () => {
       rewardCodeInput.value = '';
       document.getElementById('reward-code-container').style.display = 'none';
       document.getElementById('order-items').style.display = 'none';
+      document.getElementById('order-items').innerHTML = '<h3>Selected Items:</h3><p>No items selected yet.</p>';  
       loadTodayOrders();
       document.getElementById('display-all-orders').style.display = 'block';
     });

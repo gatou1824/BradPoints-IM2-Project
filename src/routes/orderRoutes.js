@@ -3,7 +3,6 @@ import db from '../db.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
-
 router.post('/confirm', verifyToken, (req, res) => {
   const { customer_id, food_ids, reward_code } = req.body;
   const staff_id = req.user.id;
@@ -35,9 +34,11 @@ router.post('/confirm', verifyToken, (req, res) => {
         return res.status(400).json({ message: 'Not enough points to redeem reward' });
       }
 
+      const totalPoints = 0;
+
       // Proceed to create order with only the reward
 // Filter out reward item if isReward === true
-      const filteredFoodItems = food_ids.filter(f => !f.isReward);
+      const filteredFoodItems = (food_ids || []).filter(f => !f.isReward);
 
       // then call the function
       createOrderAndItems({
@@ -103,7 +104,8 @@ router.post('/confirm', verifyToken, (req, res) => {
         }
 
         // Filter out reward item if isReward === true
-        const filteredFoodItems = food_ids.filter(f => !f.isReward);
+        const filteredFoodItems = (food_ids || []).filter(f => !f.isReward);
+
 
         // then call the function
         createOrderAndItems({
@@ -138,51 +140,61 @@ function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, re
     if (err) return res.status(500).json({ message: 'Error creating order' });
 
     const orderId = result.insertId;
-    const values = food_ids.map(item => [orderId, item.id, item.quantity]);
-    const insertItems = 'INSERT INTO order_items (order_id, food_id, quantity) VALUES ?';
+const values = food_ids.map(item => [orderId, item.id, item.quantity]);
 
-    db.query(insertItems, [values], (err) => {
-      if (err) return res.status(500).json({ message: 'Failed to add items' });
+const insertFoodItems = values.length > 0
+  ? new Promise((resolve, reject) => {
+      const insertItems = 'INSERT INTO order_items (order_id, food_id, quantity) VALUES ?';
+      db.query(insertItems, [values], (err) => {
+        if (err) return reject('Failed to add items');
+        resolve();
+      });
+    })
+  : Promise.resolve(); // Skip if no food items
 
-      // Add reward item if applicable
-      const addRewardItem = reward
-        ? new Promise((resolve, reject) => {
-            const rewardInsert = `
-              INSERT INTO order_items (order_id, food_id, quantity) VALUES (?, ?, 1)
-            `;
-            db.query(rewardInsert, [orderId, reward.food_id], (err2) => {
-              if (err2) return reject('Failed to add reward item');
-              resolve();
-            });
-          })
-        : Promise.resolve();
-
-      addRewardItem
-        .then(() => {
-          const updateUser = `
-            UPDATE users SET points = points + ?, visit_count = visit_count + 1 WHERE id = ?
+insertFoodItems
+  .then(() => {
+    // Add reward item if applicable
+    const addRewardItem = reward
+      ? new Promise((resolve, reject) => {
+          const rewardInsert = `
+            INSERT INTO order_items (order_id, food_id, quantity) VALUES (?, ?, 1)
           `;
-          db.query(updateUser, [pointsChange, customer_id], (err3) => {
-            if (err3) return res.status(500).json({ message: 'Failed to update user' });
-
-            if (reward) {
-              const markUsed = 'UPDATE reward_claims SET redeemed = 1 WHERE id = ?';
-              db.query(markUsed, [reward.rc_id], (err4) => {
-                if (err4) return res.status(500).json({ message: 'Failed to mark reward as used' });
-
-                res.json({ message: 'Order placed with reward!', order_id: orderId });
-              });
-            } else {
-              res.json({ message: 'Order placed successfully!', order_id: orderId });
-            }
+          db.query(rewardInsert, [orderId, reward.food_id], (err2) => {
+            if (err2) return reject('Failed to add reward item');
+            resolve();
           });
         })
-        .catch((e) => {
-          return res.status(500).json({ message: e });
+      : Promise.resolve();
+
+    return addRewardItem;
+  })
+  .then(() => {
+    const updateUser = `
+      UPDATE users SET points = points + ?, visit_count = visit_count + 1 WHERE id = ?
+    `;
+    db.query(updateUser, [pointsChange, customer_id], (err3) => {
+      if (err3) return res.status(500).json({ message: 'Failed to update user' });
+
+      if (reward) {
+        const markUsed = 'UPDATE reward_claims SET redeemed = 1 WHERE id = ?';
+        db.query(markUsed, [reward.rc_id], (err4) => {
+          if (err4) return res.status(500).json({ message: 'Failed to mark reward as used' });
+
+          res.json({ message: 'Order placed with reward!', order_id: orderId });
         });
+      } else {
+        res.json({ message: 'Order placed successfully!', order_id: orderId });
+      }
     });
+  })
+  .catch((e) => {
+    return res.status(500).json({ message: e });
+  });
+
   });
 }
+
 router.get('/today', verifyToken, (req, res) => {
   const query = `
     SELECT o.id, u.username AS customer_name, o.status, o.created_at

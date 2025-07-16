@@ -187,6 +187,46 @@
       margin-left: auto;
     }
 
+    #send-feedback h2 {
+  color: #b91c1c;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+#feedbackForm {
+  text-align: center;
+}
+
+#feedbackMessage {
+  width: 100%;
+  max-width: 500px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  resize: vertical;
+  font-size: 14px;
+}
+
+#feedbackForm button {
+  padding: 10px 20px;
+  margin: 10px 5px 0;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#feedbackForm button[type="submit"] {
+  background-color: #b91c1c;
+  color: white;
+}
+
+#cancelFeedbackBtn {
+  background-color: #e5e7eb;
+  color: #333;
+}
+
+
   </style>
   <script>
     const token = localStorage.getItem('token');
@@ -346,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <form id="feedbackForm">
         <textarea id="feedbackMessage" rows="4" cols="50" placeholder="Enter your feedback..." required></textarea><br>
         <button onclick="submitFeedback()" type="submit">Submit</button>
+        <button type="button" id="cancelFeedbackBtn" onclick="cancelFeedback()">Cancel</button>
       </form>
       <p id="feedbackStatus"></p>
     </div>
@@ -472,7 +513,7 @@ function checkForRecentOrders() {
   .then(res => res.json())
   .then(data => {
     if (Array.isArray(data) && data.length > 0) {
-      data.forEach(order => {
+      data.reverse().forEach(order => {
         renderFeedbackPrompt(order.id, order.created_at);
       });
     }
@@ -636,6 +677,12 @@ function loadHistory() {
     console.error('Failed to load full history:', err);
     document.getElementById('history').innerHTML = '<p style="color:red;">Unable to fetch history.</p>';
   });
+}
+
+function cancelFeedback() {
+  document.getElementById('send-feedback').style.display = 'none';
+  document.getElementById('feedbackMessage').value = '';
+  activeOrderId = null;
 }
 
 
