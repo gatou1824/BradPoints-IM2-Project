@@ -1,4 +1,4 @@
-@token = yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6InN0YWZmIiwiaWF0IjoxNzUyMDQ4OTE0LCJleHAiOjE3NTIxMzUzMTR9.6lnQV1T07tZ9go3EZrFROvbs76r6wyihWi23asvlzh4
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6InN0YWZmIiwiaWF0IjoxNzUyNjU0NzM3LCJleHAiOjE3NTI3NDExMzd9.FJtb5ejkCmKK-JEFkepIeRj_vFAhASfEbToKynqPcfE
 
 ### 
 GET http://localhost:51540/1
@@ -8,10 +8,9 @@ POST http://localhost:51540/auth/register
 Content-Type: application/json
 
 {
-    "email": "omsimimnida1@gmail.com",
-    "password": "1234",
-    "username": "nger",
-    "role": "customer"
+    "username": "user2",
+    "email": "kirayoshikage@gmail.com",
+    "password": "June152005!",
 }
 
 ### Login
@@ -41,3 +40,14 @@ Authorization: Bearer {{token}}
 ### get user profile
 GET http://localhost:51540/foods
 Authorization: Bearer {{token}}
+
+### Login
+POST http://localhost:51540/orders/confirm
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "customer_id": 4,
+    "food_ids": [],
+    "reward_code": "3BJPYpOZb8"
+}

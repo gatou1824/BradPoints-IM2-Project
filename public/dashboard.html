@@ -235,6 +235,35 @@
     h1, h3 {
       color: #b91c1c;
     }
+
+    #notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.notification {
+  background-color: #fef2f2;
+  border-left: 5px solid #dc2626;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  color: #7f1d1d;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 220px;
+  max-width: 300px;
+  animation: fadeInOut 4s forwards;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
   </style>
   <script>
     const token = localStorage.getItem('token');
@@ -294,6 +323,8 @@
     </div>
   </header>
 
+  <div id="notification-container"></div>
+
 <!-- LEFT: Order Items -->
 <div id="order-items">
   <h3>Selected Items:</h3>
@@ -314,9 +345,11 @@
       <div id="customer-order-confirmation"></div>
 
 <div id="order-functions" style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
-        <div id="reward-code-container" style="display: none;">
-          <input type="text" id="rewardCodeInput" placeholder="Enter reward code (optional)" />
-        </div>
+      <div id="reward-code-container" style="display: none;">
+        <input type="text" id="rewardCodeInput" placeholder="Enter reward code (optional)" />
+        <button type="button" id="claimRewardBtn">Claim Code</button> <!-- New button -->
+      </div>
+
 
         <button id="placeOrderBtn" style="display: none;">Place Order</button>
         <button id="cancelOrderBtn" style="display: none; background-color: gray;">Cancel Order</button>
@@ -400,23 +433,82 @@
     }
     renderOrderItems();
   }
+function renderOrderItems() {
+  const orderItemsDiv = document.getElementById('order-items');
+  orderItemsDiv.innerHTML = '<h3>Selected Items:</h3>';
 
-  function renderOrderItems() {
-    const orderItemsDiv = document.getElementById('order-items');
-    orderItemsDiv.innerHTML = '<h3>Selected Items:</h3>';
-    if (selectedFoods.length === 0) {
-      orderItemsDiv.innerHTML += '<p>No items selected yet.</p>';
-      return;
-    }
-    selectedFoods.forEach(item => {
-      const itemDiv = document.createElement('div');
-      itemDiv.style.borderBottom = '1px solid #ccc';
-      itemDiv.style.padding = '5px';
-      itemDiv.style.marginTop = '5px';
-      itemDiv.innerHTML = `<p>${item.name}${item.isReward ? ' (Reward)' : ''} | Quantity: ${item.quantity}</p>`;
-      orderItemsDiv.appendChild(itemDiv);
-    });
+  if (selectedFoods.length === 0) {
+    orderItemsDiv.innerHTML += '<p>No items selected yet.</p>';
+    return;
   }
+
+  let totalPrice = 0;
+  let totalPoints = 0;
+
+  selectedFoods.forEach(item => {
+    const foodData = allFoods.find(f => f.id === item.id);
+    const price = foodData?.price || 0;
+    const points = foodData?.points || 0;
+    let rewardTag = '';
+    if (item.isReward) {
+      const rewardPoints = foodData?.points || 0;
+      rewardTag = ` <span style="color: green; font-weight: bold;">(Redeemed for ${rewardPoints} pts)</span>`;
+    }
+
+    // Only count non-reward item price/points in total
+    if (!item.isReward) {
+      totalPrice += price * item.quantity;
+      totalPoints += points * item.quantity;
+    }
+
+    const itemDiv = document.createElement('div');
+    itemDiv.style.borderBottom = '1px solid #ccc';
+    itemDiv.style.padding = '5px';
+    itemDiv.style.marginTop = '5px';
+
+    itemDiv.innerHTML = `
+      <p>
+        ${item.name}${rewardTag} | 
+        Quantity: ${item.quantity} |
+        Price: ₱${price} |
+        Points: ${points}
+      </p>
+    `;
+    orderItemsDiv.appendChild(itemDiv);
+  });
+
+  // Total row
+  const totalDiv = document.createElement('div');
+  totalDiv.style.marginTop = '15px';
+  totalDiv.style.borderTop = '2px solid #ccc';
+  totalDiv.style.paddingTop = '10px';
+  totalDiv.style.fontWeight = 'bold';
+  totalDiv.innerHTML = `
+    <p>Total Price: ₱${totalPrice.toFixed(2)}</p>
+    <p>Total Points: ${totalPoints}</p>
+  `;
+
+  let totalRewardPoints = selectedFoods
+  .filter(item => item.isReward)
+  .reduce((sum, item) => {
+    const food = allFoods.find(f => f.id === item.id);
+    return sum + (food?.points || 0) * item.quantity;
+  }, 0);
+
+  if (totalRewardPoints > 0) {
+    const rewardPointsDiv = document.createElement('div');
+    rewardPointsDiv.style.marginTop = '10px';
+    rewardPointsDiv.innerHTML = `
+      <p style="color: #16a34a;"><strong>Points Deducted for Rewards:</strong> ${totalRewardPoints}</p>
+    `;
+    orderItemsDiv.appendChild(rewardPointsDiv);
+  }
+
+
+  orderItemsDiv.appendChild(totalDiv);
+}
+
+
 
 function confirmUser() {
   if (currentCustomer) {
@@ -509,33 +601,56 @@ document.getElementById('customer-order-confirmation').innerHTML = `
     });
   });
 
-  function addRewardItemFromCode(code) {
-    if (!code) return;
-    fetch(`/rewards/validate/${code}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-    .then(res => {
-      if (!res.ok) throw new Error('Invalid reward code');
-      return res.json();
-    })
-    .then(data => {
-      const alreadyExists = selectedFoods.find(item => item.id === data.food.id && item.isReward);
-      if (alreadyExists) return;
-      selectedFoods.push({
-        id: data.food.id,
-        name: data.food.name,
-        quantity: 1,
-        isReward: true
-      });
-      renderOrderItems();
-    })
-    .catch(err => {
-      alert(err.message || 'Failed to validate reward code.');
-    });
+function addRewardItemFromCode(code) {
+  if (!code) {
+    showNotification('Please enter a reward code.');
+    return;
   }
+
+  fetch(`/rewards/validate/${code}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  .then(res => {
+    if (!res.ok) {
+      return res.json().then(err => {
+        throw new Error(err.message || 'Unknown error');
+      });
+    }
+    return res.json();
+  })
+  .then(data => {
+    const alreadyExists = selectedFoods.find(item => item.id === data.food.id && item.isReward);
+    if (alreadyExists) {
+      alert('Reward already claimed.');
+      return;
+    }
+
+    selectedFoods.push({
+      id: data.food.id,
+      name: data.food.name,
+      quantity: 1,
+      isReward: true
+    });
+
+    rewardCodeInput.value = ''; // clear field
+    renderOrderItems();
+    showNotification(`Reward "${data.food.name}" added successfully!`);
+
+  })
+  .catch((err) => {
+    showNotification(err.message); // ✅ Replaces alert
+    console.error(err);
+  });
+}
+
+document.getElementById('claimRewardBtn').addEventListener('click', () => {
+  const code = rewardCodeInput.value.trim();
+  addRewardItemFromCode(code);
+});
+
 
   placeOrderBtn.addEventListener('click', () => {
     const rewardCode = rewardCodeInput.value.trim();
@@ -565,20 +680,21 @@ document.getElementById('customer-order-confirmation').innerHTML = `
       if (!res.ok) throw new Error('Order failed');
       return res.json();
     })
-    .then(() => {
-      alert('Order successfully placed! ✅');
-      selectedFoods = [];
-      placeOrderBtn.style.display = 'none';
-      foodsList.style.display = 'none';
-      cancelOrderBtn.style.display = 'none';
-      document.getElementById('customer-order-confirmation').innerHTML = '';
-      document.getElementById('customerCodeInput').value = '';
-      rewardCodeInput.value = '';
-      document.getElementById('reward-code-container').style.display = 'none';
-      document.getElementById('order-items').style.display = 'none';
-      loadTodayOrders();
-      document.getElementById('display-all-orders').style.display = 'block';
-    });
+  .then(() => {
+    alert('Order successfully placed! ✅');
+    selectedFoods = [];
+    placeOrderBtn.style.display = 'none';
+    foodsList.style.display = 'none';
+    cancelOrderBtn.style.display = 'none';
+    document.getElementById('customer-order-confirmation').innerHTML = '';
+    document.getElementById('customerCodeInput').value = '';
+    rewardCodeInput.value = '';
+    document.getElementById('reward-code-container').style.display = 'none';
+    document.getElementById('order-items').style.display = 'none';
+    document.getElementById('order-items').innerHTML = '<h3>Selected Items:</h3><p>No items selected yet.</p>'; // 👈 clear items here
+    loadTodayOrders();
+    document.getElementById('display-all-orders').style.display = 'block';
+  });
   });
 
   function loadTodayOrders() {
@@ -647,6 +763,7 @@ document.getElementById('customer-order-confirmation').innerHTML = `
   document.getElementById('customer-order-confirmation').innerHTML = '';
   document.getElementById('reward-code-container').style.display = 'none';
   document.getElementById('order-items').style.display = 'none'
+    document.getElementById('order-items').innerHTML = '<h3>Selected Items:</h3><p>No items selected yet.</p>';  
   document.getElementById('display-all-orders').style.display = 'block';
 
   });
@@ -682,6 +799,21 @@ document.getElementById('customer-order-confirmation').innerHTML = `
     container.style.display = 'block';
   });
 }
+
+function showNotification(message) {
+  const container = document.getElementById('notification-container');
+  const notif = document.createElement('div');
+  notif.className = 'notification';
+  notif.innerText = message;
+
+  container.appendChild(notif);
+
+  // Auto-remove after animation
+  setTimeout(() => {
+    notif.remove();
+  }, 4000);
+}
+
 
   loadTodayOrders();
 </script>

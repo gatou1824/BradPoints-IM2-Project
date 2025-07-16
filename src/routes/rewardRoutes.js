@@ -8,6 +8,21 @@ const router = express.Router();
 router.get('/progress', verifyToken, (req, res) => {
   const userId = req.user.id;
 
+// const getRewardsProgress = `
+//   SELECT
+//     r.id AS reward_id,
+//     r.name AS reward_name,
+//     r.required_points,
+//     u.points AS user_points,
+//     rc.code,
+//     rc.created_at AS claimed_at,
+//     rc.redeemed
+//   FROM rewards r
+//   LEFT JOIN users u ON u.id = ?
+//   LEFT JOIN reward_claims rc ON rc.customer_id = ? AND rc.reward_id = r.id
+//   GROUP BY r.id
+// `;
+
 const getRewardsProgress = `
   SELECT
     r.id AS reward_id,
@@ -19,8 +34,13 @@ const getRewardsProgress = `
     rc.redeemed
   FROM rewards r
   LEFT JOIN users u ON u.id = ?
-  LEFT JOIN reward_claims rc ON rc.customer_id = ? AND rc.reward_id = r.id
-  GROUP BY r.id
+  LEFT JOIN reward_claims rc ON rc.id = (
+    SELECT rc2.id
+    FROM reward_claims rc2
+    WHERE rc2.customer_id = ? AND rc2.reward_id = r.id
+    ORDER BY rc2.created_at DESC
+    LIMIT 1
+  )
 `;
 
 db.query(getRewardsProgress, [userId, userId], (err, results) => {
@@ -159,6 +179,75 @@ router.post('/redeem', verifyToken, (req, res) => {
   });
 });
 
+router.get('/history', verifyToken, (req, res) => {
+  const userId = req.user.id;
 
+const query = 
+`  SELECT 
+    o.id AS id,
+    GROUP_CONCAT(f.name SEPARATOR ', ') AS item,
+    NULL AS code,
+    o.created_at AS date,
+    'Order' AS type,
+    NULL AS redeemed
+  FROM orders o
+  JOIN order_items oi ON o.id = oi.order_id
+  JOIN food f ON oi.food_id = f.id
+  WHERE o.customer_id = ?
+  GROUP BY o.id
+
+  UNION ALL
+
+  SELECT 
+    rc.id AS id,
+    r.name AS item,
+    rc.code AS code,
+    rc.created_at AS date,
+    'Reward' AS type,
+    rc.redeemed AS redeemed
+  FROM reward_claims rc
+  JOIN rewards r ON rc.reward_id = r.id
+  WHERE rc.customer_id = ?
+
+  ORDER BY date DESC`
+;
+
+
+  db.query(query, [userId, userId], (err, results) => {
+    if (err) {
+      console.error('Error fetching full history:', err.sqlMessage || err.message || err);
+      return res.status(500).json({ message: 'Failed to fetch full history' });
+    }
+
+    res.json(results);
+  });
+});
+
+router.get('/validate/:code', (req, res) => {
+  const code = req.params.code;
+
+  // Adjust your table/column names as needed
+  const query = `
+    SELECT rc.id AS reward_claim_id, f.id AS food_id, f.name
+    FROM reward_claims rc
+    JOIN rewards r ON rc.reward_id = r.id
+    JOIN food f ON r.food_id = f.id
+    WHERE rc.code = ? AND rc.redeemed = 0
+  `;
+
+  db.query(query, [code], (err, results) => {
+    if (err) return res.status(500).json({ message: 'DB error' });
+    if (results.length === 0) return res.status(404).json({ message: 'Invalid or already claimed code' });
+
+    const reward = results[0];
+    return res.json({
+      reward_id: reward.reward_id,
+      food: {
+        id: reward.food_id,
+        name: reward.name
+      }
+    });
+  });
+});
 
 export default router;

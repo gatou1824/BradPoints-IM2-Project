@@ -13,7 +13,7 @@ router.post('/confirm', verifyToken, (req, res) => {
   // ✅ Reward-only redemption (no food items but has a valid code)
   if (!hasFoods && reward_code) {
     const rewardQuery = `
-      SELECT rc.id, rc.reward_id, rc.redeemed, rc.created_at, r.required_points, r.food_id, u.points
+      SELECT rc.id AS rc_id, rc.reward_id, rc.redeemed, rc.created_at, r.required_points, r.food_id, u.points
       FROM reward_claims rc
       JOIN rewards r ON rc.reward_id = r.id
       JOIN users u ON rc.customer_id = u.id
@@ -36,14 +36,19 @@ router.post('/confirm', verifyToken, (req, res) => {
       }
 
       // Proceed to create order with only the reward
+// Filter out reward item if isReward === true
+      const filteredFoodItems = food_ids.filter(f => !f.isReward);
+
+      // then call the function
       createOrderAndItems({
         staff_id,
         customer_id,
-        food_ids: [{ id: reward.food_id, quantity: 1 }],
+        food_ids: filteredFoodItems,
         reward,
         pointsChange: -reward.required_points,
         res
       });
+
     });
 
     return; // ❗Exit early, don’t proceed to food query
@@ -75,7 +80,7 @@ router.post('/confirm', verifyToken, (req, res) => {
     if (reward_code) {
       // Check and apply reward if present
       const rewardQuery = `
-        SELECT rc.id, rc.reward_id, rc.redeemed, rc.created_at, r.required_points, r.food_id, u.points
+        SELECT rc.id AS rc_id, rc.reward_id, rc.redeemed, rc.created_at, r.required_points, r.food_id, u.points
         FROM reward_claims rc
         JOIN rewards r ON rc.reward_id = r.id
         JOIN users u ON rc.customer_id = u.id
@@ -97,10 +102,14 @@ router.post('/confirm', verifyToken, (req, res) => {
           return res.status(400).json({ message: 'Not enough points to redeem reward' });
         }
 
+        // Filter out reward item if isReward === true
+        const filteredFoodItems = food_ids.filter(f => !f.isReward);
+
+        // then call the function
         createOrderAndItems({
           staff_id,
           customer_id,
-          food_ids,
+          food_ids: filteredFoodItems,
           reward,
           pointsChange: totalPoints - reward.required_points,
           res
@@ -119,8 +128,6 @@ router.post('/confirm', verifyToken, (req, res) => {
     }
   });
 });
-
-
 
 // ✅ Helper function to create order only if validation passed
 function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, reward, res }) {
@@ -157,8 +164,9 @@ function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, re
             if (err3) return res.status(500).json({ message: 'Failed to update user' });
 
             if (reward) {
+              console.log('Reward object:', reward); // 👈 Add this line
               const markUsed = 'UPDATE reward_claims SET redeemed = 1 WHERE id = ?';
-              db.query(markUsed, [reward.id], (err4) => {
+              db.query(markUsed, [reward.rc_id], (err4) => {
                 if (err4) return res.status(500).json({ message: 'Failed to mark reward as used' });
 
                 res.json({ message: 'Order placed with reward!', order_id: orderId });
@@ -174,44 +182,6 @@ function createOrderAndItems({ staff_id, customer_id, food_ids, pointsChange, re
     });
   });
 }
-
-
-router.post('/redeem', verifyToken, (req, res) => {
-  const { customer_id, code } = req.body;
-  const staff_id = req.user.id;
-
-  const query = `
-    SELECT rc.id, rc.reward_id, rc.used, r.food_id
-    FROM reward_claims rc
-    JOIN rewards r ON rc.reward_id = r.id
-    WHERE rc.code = ? AND rc.customer_id = ?
-  `;
-
-  db.query(query, [code, customer_id], (err, result) => {
-    if (err) return res.status(500).json({ message: 'DB error' });
-    if (result.length === 0 || result[0].used)
-      return res.status(400).json({ message: 'Invalid or already used code' });
-
-    const reward = result[0];
-    const orderQuery = 'INSERT INTO orders (staff_id, customer_id) VALUES (?, ?)';
-    
-    db.query(orderQuery, [staff_id, customer_id], (err, result2) => {
-      if (err) return res.status(500).json({ message: 'Error creating order' });
-
-      const orderId = result2.insertId;
-      const itemInsert = `
-        INSERT INTO order_items (order_id, food_id, quantity)
-        VALUES (?, ?, 1)
-      `;
-
-      db.query(itemInsert, [orderId, reward.food_id], () => {
-        const markUsed = 'UPDATE reward_claims SET used = 1 WHERE id = ?';
-        db.query(markUsed, [reward.id]);
-        res.json({ message: 'Redeemed successfully!', order_id: orderId });
-      });
-    });
-  });
-});
 
 router.get('/today', verifyToken, (req, res) => {
   const query = `

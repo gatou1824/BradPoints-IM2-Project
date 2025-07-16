@@ -215,6 +215,64 @@
       window.location.href = '/';
     });
 
+fetch('/rewards/progress', {
+  headers: { Authorization: `Bearer ${token}` }
+})
+.then(res => res.json())
+.then(data => {
+  const rewardsContainer = document.getElementById('rewards');
+  rewardsContainer.innerHTML = ''; // clear previous entries
+  if (!Array.isArray(data)) {
+    console.error('Expected array, got:', data);
+    return;
+  } 
+data.forEach(r => {
+  const div = document.createElement('div');
+  div.className = 'reward-card';
+
+  const info = document.createElement('div');
+  info.className = 'reward-info';
+
+  const actions = document.createElement('div');
+  actions.className = 'reward-actions';
+
+  // === UI display logic ===
+
+  info.innerHTML = `<strong>${r.reward_name}</strong><br>`;
+
+  if (r.redeemed) {
+    info.innerHTML += `<span style="color: green;">✅ Reward already used</span>`;
+  } else if (r.code) {
+    info.innerHTML += `
+      <span>Code: ${r.code}</span><br>
+      <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
+    `;
+  } else {
+    info.innerHTML += `<span>Progress: ${r.progress} / ${r.required_points}</span><br>`;
+
+    if (r.claimed_recently) {
+      actions.innerHTML = `<p style="color: green;">Already claimed</p>`;
+    } else if (r.can_claim) {
+      const btn = document.createElement('button');
+      btn.textContent = 'Redeem';
+      btn.style = btnStyle();
+      btn.onclick = () => claimReward(r.reward_id, btn);
+      actions.appendChild(btn);
+    } else {
+      actions.innerHTML = `<p style="color: gray;">Not enough points yet</p>`;
+    }
+  }
+
+  div.appendChild(info);
+  div.appendChild(actions);
+  rewardsContainer.appendChild(div);
+});
+})
+.catch(err => {
+  console.error('Failed to load rewards:', err);
+});
+
+
 
 document.addEventListener('DOMContentLoaded', () => {
   const profileDropdown = document.getElementById('profileDropdown');
@@ -313,78 +371,6 @@ fetch('/profile', {
 })
 .catch(err => {
   console.error('Failed to fetch profile:', err);
-});
-
-// Load rewards
-fetch('/rewards/progress', {
-  headers: { Authorization: `Bearer ${token}` }
-})
-.then(res => res.json())
-.then(data => {
-  const rewardsContainer = document.getElementById('rewards');
-  rewardsContainer.innerHTML = ''; // clear previous entries
-  if (!Array.isArray(data)) {
-    console.error('Expected array, got:', data);
-    return;
-  } 
-  data.forEach(r => {
-  const div = document.createElement('div');
-  div.className = 'reward-card';
-
-  const info = document.createElement('div');
-  info.className = 'reward-info';
-
-  const actions = document.createElement('div');
-  actions.className = 'reward-actions';
-
-if (r.code) {
-  if (r.redeemed) {
-    // Reward was already claimed and redeemed by staff
-    info.innerHTML = `
-      <strong>${r.reward_name}</strong><br>
-      <span style="color: green;">✅ Reward already used</span>
-    `;
-  } else {
-    // Code still valid
-    info.innerHTML = `
-      <strong>${r.reward_name}</strong><br>
-      <span>Code: ${r.code}</span><br>
-      <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
-    `;
-  }
-} else {
-  // No valid code (expired or not yet claimed)
-  info.innerHTML = `
-    <strong>${r.reward_name}</strong><br>
-    <span>Progress: ${r.progress} / ${r.required_points}</span>
-  `;
-
-  if (r.claimed_recently) {
-    actions.innerHTML = `<p style="color: green;">Already claimed</p>`;
-  } else if (r.can_claim) {
-    const btn = document.createElement('button');
-    btn.textContent = 'Redeem';
-    btn.style.padding = '8px 16px';
-    btn.style.backgroundColor = '#b91c1c';
-    btn.style.color = 'white';
-    btn.style.border = 'none';
-    btn.style.borderRadius = '5px';
-    btn.style.cursor = 'pointer';
-    btn.onclick = () => claimReward(r.reward_id, btn);
-    actions.appendChild(btn);
-  } else {
-    actions.innerHTML = `<p style="color: gray;">Not enough points yet</p>`;
-  }
-}
-
-
-  div.appendChild(info);
-  div.appendChild(actions);
-  rewardsContainer.appendChild(div);
-  });
-})
-.catch(err => {
-  console.error('Failed to load rewards:', err);
 });
 
 // Claim logic
@@ -634,7 +620,6 @@ function loadHistory() {
           <strong>🎁 ${h.item}</strong><br>
           <span>Code: ${h.code}</span><br>
           <small>Claimed at: ${new Date(h.date).toLocaleString()}</small><br>
-          <small>Status: ${h.redeemed ? '✅ Redeemed' : '❌ Not redeemed yet'}</small>
         `;
       } else {
         info.innerHTML = `

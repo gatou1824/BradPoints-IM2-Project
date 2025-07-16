@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Braddex Sign-Up</title>
+  <link rel="icon" type="image/x-icon" href="images/logo.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="login-signup-styles.css" />
+</head>
+<body>
+  <div class="left-panel">
+    <div class="image-placeholder">
+      <img id="slideshow" src="images/food1.png" alt="Slideshow Image" style="width: 100%; height: 100%; border-radius: 5%;" />
+    </div>
+  </div>
+  <div class="right-panel">
+    <form class="login-box" id="registerForm">
+      <a href="index.html" class="logo"><img src="images/logo.jpg" alt="Logo" /></a>
+      <h2>Welcome to Braddex</h2>
+      <p>Please enter the required information to create your account.</p>
+
+      <input type="text" class="input-box" id="regUsername" placeholder="Username" required />
+      <input type="email" class="input-box" id="regEmail" placeholder="Email address" required />
+      <input type="password" class="input-box" id="regPassword" placeholder="Password" required />
+      <input type="password" class="input-box" id="regRepeatPassword" placeholder="Repeat Password" required />
+
+      <div class="terms">
+        <input type="checkbox" id="terms" />
+        <label for="terms">I agree to the </label>
+        <div class="popup" onclick="myFunction()">Terms and Conditions
+          <span class="popuptext" id="myPopup">
+            <h2>TERMS AND CONDITIONS</h2>
+            1. Your data will be protected.<br />
+            2. No spam policy.<br />
+            3. You agree to our rules and regulations.<br />
+          </span>
+        </div>
+      </div>
+
+      <button id="signupBtn" class="button primary" disabled type="submit">Signup</button>
+    </form>
+  </div>
+
+  <script>
+    function myFunction() {
+      const popup = document.getElementById("myPopup");
+      popup.classList.toggle("show");
+    }
+
+    const checkbox = document.getElementById("terms");
+    const signupBtn = document.getElementById("signupBtn");
+
+    checkbox.addEventListener("change", () => {
+      signupBtn.disabled = !checkbox.checked;
+    });
+
+    // Slideshow logic
+    const images = ["images/food1.png", "images/food2.png", "images/food3.png", "images/food4.png"];
+    let index = 0;
+    const slideshow = document.getElementById("slideshow");
+
+    setInterval(() => {
+      index = (index + 1) % images.length;
+      slideshow.src = images[index];
+    }, 3000);
+
+    // Register logic
+    const apiBase = 'http://localhost:51540';
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('regUsername').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const repeatPassword = document.getElementById('regRepeatPassword').value;
+
+      // Password match check
+      if (password !== repeatPassword) {
+        alert("Passwords do not match.");
+        return;
+      }
+
+      // Password strength check
+      const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!strongPassword.test(password)) {
+        alert("Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.");
+        return;
+      }
+
+      // Disable button while submitting
+      signupBtn.disabled = true;
+      signupBtn.textContent = "Signing up...";
+
+      try {
+        const res = await fetch(`${apiBase}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert(data.message || "Registration successful! Please check your email to verify your account.");
+          window.location.href = "login.html";
+        } else if (data.errors) {
+          alert(data.errors.map(err => err.msg).join("\n"));
+        } else {
+          alert(data.message || "Registration failed.");
+        }
+      } catch (error) {
+        alert("Network error. Please try again later.");
+        console.error(error);
+      }
+
+      signupBtn.disabled = false;
+      signupBtn.textContent = "Signup";
+    });
+  </script>
+</body>
+</html>

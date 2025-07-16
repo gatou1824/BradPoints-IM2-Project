@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config({path:'../.env'});
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import authRoutes from './routes/authRoutes.js'
@@ -12,7 +14,6 @@ import orderRoutes from './routes/orderRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js'
 import rewardRoutes from './routes/rewardRoutes.js'
 
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT; // Pick an allowed port between 51540 - 51549
@@ -38,9 +39,9 @@ app.use(express.static(path.join(__dirname, '../public')))
 
 // serving up the HTML file from the public direcotory
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public', 'index.html'))
+    res.sendFile(path.join(__dirname, '../public', 'login.html'))
 })
 
-app.listen(51540, '0.0.0.0', () => {
-  console.log('Server running on http://10.16.207.202:51540');
+app.listen(PORT || 51540, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 });
