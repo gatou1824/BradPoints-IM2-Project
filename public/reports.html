@@ -38,7 +38,7 @@
                     
 
                         <p class="h5 mt-3">Top Point Earners</p>
-                            <div class="card-body p-0 mb-3">
+                            <div class="card-body p-0 mb-3 scrollable-card-body">
                                 <div class="table-responsive">
                                 <table class="table table-striped mb-0">
                                     <thead class="table-dark">
@@ -63,6 +63,7 @@
                                         <td>July 9, 2025</td>
                                     </tr>
                                     
+                                    
                                     </tbody>
                                 </table>
                                 </div>
@@ -83,7 +84,7 @@
                         <div class="card-body">
                             <h3>Product Availment Statistics</h3>
                             <p class="h5"><b>Steamed Rice</b> is the most availed item, and is found in 67% of all redemptions.</p>
-                           <div class="card-body p-0 mb-3">
+                           <div class="card-body p-0 mb-3 scrollable-card-body">
                                 <div class="table-responsive">
                                 <table class="table table-striped mb-0">
                                     <thead class="table-dark">
@@ -136,7 +137,9 @@
                                 </div>
 
                                 <div class="card-body">
-                                    <canvas id="pointsChart" height="300"></canvas>
+                                    <div class="scrollable-graph-x">
+                                        <canvas id="pointsChart" height="300"></canvas>
+                                    </div>
                                 </div>
                             </div>
 
@@ -145,7 +148,9 @@
                                     Points Redeemed Over Time
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="redeemedChart" height="300"></canvas>
+                                    <div class="scrollable-graph-x">
+                                        <canvas id="redeemedChart" height="300" ></canvas>
+                                    </div>
                                 </div>
                             </div>
 
