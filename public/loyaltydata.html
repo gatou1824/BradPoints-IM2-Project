@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visit & Loyalty Data | Admin Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="adminStyles.css">
+</head>
+<body>
+    <div class="d-flex">
+        <div id="sidebar"></div>
+        <div class="main-content flex-grow-1 p-4 container">
+            <div class="main-content" id="Visit_Loyalty">
+                <h1>Visit & Loyalty Data</h1>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+        
+                                <h3>Visit Tracking</h3>
+                                <button class="btn btn-primary custom-red-card">Add Entry</button>
+
+                        </div>
+                        
+                        <div class="filters mb-3">
+                            <label>Date Range: 
+                                <input type="date" class="form-control d-inline-block w-auto"> to 
+                                <input type="date" class="form-control d-inline-block w-auto">
+                            </label>
+                            <label class="ml-3">Customer Filter: 
+                                <input type="text" class="form-control d-inline-block w-auto" placeholder="Search customer">
+                            </label>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Customer</th>
+                                        <th>Item/s Purchased</th>
+                                        <th>Points Earned</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>2023-07-15</td>
+                                        <td>John Doe</td>
+                                        <td>Steamed Rice</td>
+                                        <td>10</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="quick-actions">
+                        <h3>Quick Actions</h3>
+                        <button class="btn btn-primary" onclick="location.href='custmgt.html'">Add New Customer</button>
+                        <button class="btn btn-secondary" onclick="location.href='reports.html'">View Latest Feedback</button>
+                        <button class="btn btn-success" onclick="location.href='admindash.html'">Add Pending Action</button>
+                        <button class="btn btn-success" onclick="location.href='incents.html'">Add New Reward</button>
+                    </div>
+                </div>
+            </div>   
+        </div>
+    </div>
+
+    <script>
+        fetch('nav.html')
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById('sidebar').innerHTML = html;
+            document.body.style.visibility = 'visible';
+        })
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
