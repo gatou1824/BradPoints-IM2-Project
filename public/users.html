@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #fff;
+      color: #333;
+    }
+    #header {
+      background-color: #fff;
+      border-bottom: 4px solid #b91c1c;
+      padding: 20px 330px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #header img {
+      height: 70px;
+      object-fit: contain;
+    }
+    .profile-container {
+      position: relative;
+      margin-left: 15px;
+    }
+    .profile-icon {
+      width: 70px;
+      height: 70px;
+      background-color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b91c1c;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 32px;
+    }
+    .profile-dropdown {
+      position: absolute;
+      right: 290px;
+      top: 80px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      min-width: 140px;
+      white-space: nowrap;
+      z-index: 1000;
+      width: 140px;
+    }
+    .profile-dropdown a {
+      padding: 10px 15px;
+      color: #b91c1c;
+      text-decoration: none;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      display: block;
+    }
+    .profile-dropdown a:last-child {
+      border-bottom: none;
+    }
+    .profile-dropdown a:hover {
+      background-color: #ffeaea;
+    }
+    #toggle-profile {
+      position: fixed;
+      top: 134px;
+      right: 10px;
+      width: 315px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 16px;
+      z-index: 999;
+      display: none;
+      font-family: Arial, sans-serif;
+      padding-top: 75px;
+    }
+    .profile-header {
+      background-color: #b91c1c;
+      color: #fff;
+      text-align: center;
+      padding: 40px 20px 20px;
+      position: relative;
+    }
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      font-size: 42px;
+      top: -50px;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+    }
+    .profile-header h2 {
+      margin: 10px 0 0;
+      font-size: 20px;
+    }
+    .profile-header span {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    .profile-body {
+      padding: 20px;
+      font-size: 14px;
+    }
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 0 10px;
+    }
+    .profile-label {
+      color: #555;
+    }
+    .profile-value {
+      font-weight: bold;
+    }
+    .reward-card {
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .reward-info {
+      max-width: 70%;
+    }
+    .reward-actions {
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+  <header id="header">
+    <img src="/images/logo.jpg" alt="">
+    <div class="profile-container">
+      <div class="profile-icon" id="profileIcon">👤</div>
+    </div>
+    <div class="profile-dropdown" id="profileDropdown">
+      <a href="#" onclick="profile()">View Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </div>
+  </header>
+  <div id="toggle-profile"></div>
+  <main id="cont" style="padding: 0px 20px; max-width: 1210px; margin: 0 auto;"></main>
+</body>
+
+  <script>
+    // Token check and redirect
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('No token found. Redirecting...');
+      window.location.href = '/';
+    }
+
+    // Role check
+    fetch('/profile', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Unauthorized');
+      return res.json();
+    })
+    .then(data => {
+      if (data.role !== 'admin') {
+        window.location.href = '/';
+      }
+    })
+    .catch(() => {
+      alert('Access denied or token invalid. Redirecting...');
+      window.location.href = '/';
+    });
+
+    // Profile dropdown logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const profileDropdown = document.getElementById('profileDropdown');
+      const profileIcon = document.getElementById('profileIcon');
+      const toggleProfile = document.getElementById('toggle-profile');
+      let profileVisible = false;
+
+      profileIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleProfile.style.display = 'none';
+        profileVisible = false;
+        profileDropdown.style.display = profileDropdown.style.display === 'flex' ? 'none' : 'flex';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!profileDropdown.contains(e.target) && !profileIcon.contains(e.target)) {
+          profileDropdown.style.display = 'none';
+        }
+        if (!toggleProfile.contains(e.target) && !profileIcon.contains(e.target)) {
+          toggleProfile.style.display = 'none';
+        }
+      });
+    });
+
+    // Load profile management HTML
+    fetch('/admin/users')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('cont').innerHTML = html;
+        document.body.style.visibility = 'visible';
+      });
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+
+    // Profile modal
+    function profile() {
+      document.getElementById('profileDropdown').style.display = 'none';
+      fetch('/profile', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const toggleProfile = document.getElementById('toggle-profile');
+        toggleProfile.innerHTML = `
+          <div class="profile-header">
+            <div class="profile-avatar">👤</div>
+            <h2>${data.username}</h2>
+            <span>${data.user_code}</span>
+          </div>
+          <div class="profile-body">
+            <div class="profile-row">
+              <span class="profile-label">Email</span>
+              <span class="profile-value">${data.email}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Role</span>
+              <span class="profile-value">${data.role}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Points</span>
+              <span class="profile-value">${data.points}</span>
+            </div>
+          </div>
+        `;
+        toggleProfile.style.display = 'block';
+      })
+      .catch(() => {
+        alert('Token invalid. Redirecting...');
+        window.location.href = '/';
+      });
+    }
+
+    let showAdmin = false;
+    let showStaff = false;
+    let showCustomer = false;
+    
+    function allCustomers() {
+      console.log('clicked admin');
+      showCustomer = !showCustomer;
+
+      // Load all admin rows if showAll is true, otherwise load default (3)
+      loadAdmin(showCustomer ? null : 3);
+
+      if (showCustomer) {
+          document.getElementById('adminSection').style.display = 'none';
+          document.getElementById('staffSection').style.display = 'none';
+      } else {
+          document.getElementById('customerSection').style.display = 'block';
+          document.getElementById('staffSection').style.display = 'block';
+          document.getElementById('adminSection').style.display = 'block'; // ← add this
+      }
+    }
+
+const loadCustomers = (limit) => {
+  const url = limit ? `/customers/cust/${limit}` : '/customers/customer/allCust';
+
+  fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const tbody = document.getElementById('customerList');
+    tbody.innerHTML = ''; // Clear previous data
+
+    data.forEach((user) => {
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>${user.id}</td>
+        <td>${user.username}</td>
+        <td>${user.email}</td>
+        <td>${user.points}</td>
+        <td>${'.....'}</td>
+        <td>${user.is_verified ? 'Yes' : 'No'}</td>
+        <td>
+          <button class="btn btn-sm btn-primary edit-btn">Edit</button>
+          <button class="btn btn-sm btn-success save-btn" style="display:none;">Save</button>
+          <button class="btn btn-sm btn-secondary cancel-btn" style="display:none;">Cancel</button>
+          <button class="btn btn-sm btn-danger delete-btn">Delete</button>
+        </td>
+      `;
+
+      const [idTd, usernameTd, emailTd, pointsTd, passwordTd, isVerifiedTd] = tr.children;
+
+      // Handle Edit
+      tr.querySelector('.edit-btn').addEventListener('click', () => {
+        usernameTd.innerHTML = `<input type="text" value="${user.username}" class="form-control form-control-sm">`;
+        emailTd.innerHTML = `<input type="email" value="${user.email}" class="form-control form-control-sm">`;
+        pointsTd.innerHTML = `<input type="number" value="${user.points}" class="form-control form-control-sm">`;
+        passwordTd.innerHTML = `<input type="password" class="form-control" placeholder="New Password">`;
+        isVerifiedTd.innerHTML = `
+          <select class="form-control">
+            <option value="true" ${user.is_verified ? 'selected' : ''}>Yes</option>
+            <option value="false" ${!user.is_verified ? 'selected' : ''}>No</option>
+          </select>
+        `;
+
+
+        tr.querySelector('.edit-btn').style.display = 'none';
+        tr.querySelector('.save-btn').style.display = 'inline-block';
+        tr.querySelector('.cancel-btn').style.display = 'inline-block';
+      });
+
+      // Handle Save
+      tr.querySelector('.save-btn').addEventListener('click', () => {
+        const updatedUsername = usernameTd.querySelector('input').value;
+        const updatedEmail = emailTd.querySelector('input').value;
+        const updatedPoints = pointsTd.querySelector('input').value;
+        const updatedPassword = passwordTd.querySelector('input').value;
+        const isVerified = isVerifiedTd.querySelector('select').value;
+
+        console.log(isVerified)
+
+        fetch(`/customers/update/${user.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            username: updatedUsername,
+            email: updatedEmail,
+            points: parseInt(updatedPoints),
+            password: updatedPassword || undefined,
+            is_verified: isVerified === 'true'
+          })
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to update');
+          return res.json();
+        })
+        .then(updated => {
+          // Refresh the row
+          usernameTd.textContent = updated.username;
+          emailTd.textContent = updated.email;
+          pointsTd.textContent = updated.points;
+              passwordTd.textContent = '.....';
+          isVerifiedTd.textContent = updated.is_verified ? 'Yes' : 'No';
+
+          tr.querySelector('.edit-btn').style.display = 'inline-block';
+          tr.querySelector('.save-btn').style.display = 'none';
+          tr.querySelector('.cancel-btn').style.display = 'none';
+        })
+        .catch(err => {
+          console.error("Update error:", err);
+        });
+      });
+
+      // Handle Cancel
+      tr.querySelector('.cancel-btn').addEventListener('click', () => {
+        usernameTd.textContent = user.username;
+        emailTd.textContent = user.email;
+        pointsTd.textContent = user.points;
+        passwordTd.textContent = '.....';
+        isVerifiedTd.textContent = user.is_verified ? 'Yes' : 'No';
+        
+
+        tr.querySelector('.edit-btn').style.display = 'inline-block';
+        tr.querySelector('.save-btn').style.display = 'none';
+        tr.querySelector('.cancel-btn').style.display = 'none';
+      });
+
+      tr.querySelector('.delete-btn').addEventListener('click', () => {
+      if (confirm(`Are you sure you want to delete ${user.username}?`)) {
+        fetch(`/customers/delete/${user.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Delete failed');
+          tr.remove(); // Remove row from table
+        })
+        .catch(err => {
+          console.error("Delete error:", err);
+        });
+      }
+    });
+
+      tbody.appendChild(tr);
+    });
+  })
+  .catch(err => {
+    console.error("Failed to fetch customers:", err);
+  });
+};
+
+  loadCustomers(3);
+
+
+    function allStaff() {
+      console.log('clicked admin');
+      showStaff = !showStaff;
+
+      // Load all admin rows if showAll is true, otherwise load default (3)
+      loadAdmin(showStaff ? null : 3);
+
+      if (showStaff) {
+          document.getElementById('adminSection').style.display = 'none';
+          document.getElementById('customerSection').style.display = 'none';
+      } else {
+          document.getElementById('customerSection').style.display = 'block';
+          document.getElementById('staffSection').style.display = 'block';
+          document.getElementById('adminSection').style.display = 'block'; // ← add this
+      }
+    }
+
+const loadStaff = (limit) => {
+  const url = limit ? `/staff/${limit}` : '/staff/';
+
+  fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const tbody = document.getElementById('staffList');
+    tbody.innerHTML = ''; // Clear previous data
+
+    data.forEach((user) => {
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>${user.id}</td>
+        <td>${user.username}</td>
+        <td>${user.email}</td>
+        <td>
+          <button class="btn btn-sm btn-primary edit-btn">Edit</button>
+          <button class="btn btn-sm btn-success save-btn" style="display:none;">Save</button>
+          <button class="btn btn-sm btn-secondary cancel-btn" style="display:none;">Cancel</button>
+          <button class="btn btn-sm btn-danger delete-btn">Delete</button>
+        </td>
+      `;
+
+      const [idTd, usernameTd, emailTd] = tr.children;
+
+      // === Edit Button ===
+      tr.querySelector('.edit-btn').addEventListener('click', () => {
+        usernameTd.innerHTML = `<input type="text" value="${user.username}" class="form-control form-control-sm">`;
+        emailTd.innerHTML = `<input type="email" value="${user.email}" class="form-control form-control-sm">`;
+
+        tr.querySelector('.edit-btn').style.display = 'none';
+        tr.querySelector('.save-btn').style.display = 'inline-block';
+        tr.querySelector('.cancel-btn').style.display = 'inline-block';
+      });
+
+      // === Save Button ===
+      tr.querySelector('.save-btn').addEventListener('click', () => {
+        const updatedUsername = usernameTd.querySelector('input').value;
+        const updatedEmail = emailTd.querySelector('input').value;
+
+        fetch(`/staff/update/${user.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            username: updatedUsername,
+            email: updatedEmail
+          })
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to update');
+          return res.json();
+        })
+        .then(updated => {
+          usernameTd.textContent = updated.username;
+          emailTd.textContent = updated.email;
+
+          tr.querySelector('.edit-btn').style.display = 'inline-block';
+          tr.querySelector('.save-btn').style.display = 'none';
+          tr.querySelector('.cancel-btn').style.display = 'none';
+        })
+        .catch(err => {
+          console.error("Update error:", err);
+        });
+      });
+
+      // === Cancel Button ===
+      tr.querySelector('.cancel-btn').addEventListener('click', () => {
+        usernameTd.textContent = user.username;
+        emailTd.textContent = user.email;
+
+        tr.querySelector('.edit-btn').style.display = 'inline-block';
+        tr.querySelector('.save-btn').style.display = 'none';
+        tr.querySelector('.cancel-btn').style.display = 'none';
+      });
+
+      // === Delete Button ===
+      tr.querySelector('.delete-btn').addEventListener('click', () => {
+        if (confirm(`Are you sure you want to delete ${user.username}?`)) {
+          fetch(`/staff/delete/${user.id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          .then(res => {
+            if (!res.ok) throw new Error('Delete failed');
+            tr.remove(); // Remove row from table
+          })
+          .catch(err => {
+            console.error("Delete error:", err);
+          });
+        }
+      });
+
+      tbody.appendChild(tr);
+    });
+  })
+  .catch(err => {
+    console.error("Failed to fetch staff:", err);
+  });
+};
+
+  // Load default (3) on page load
+  loadStaff(3);
+
+    const loadAdmin = (limit) => {
+    const url = limit ? `/admin/${limit}` : '/admin/';
+    
+    fetch(url, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById('adminList');
+      tbody.innerHTML = ''; // Clear previous data
+
+      data.forEach((user) => {
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+          <td>${user.id}</td>
+          <td>${user.username}</td>
+          <td>${user.email}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(err => {
+      console.error("Failed to fetch customers:", err);
+    });
+  };
+  // Load default (3) on page load
+  loadAdmin(3);
+
+
+    function allAdmin() {
+      console.log('clicked admin');
+      showAdmin = !showAdmin;
+
+      // Load all admin rows if showAll is true, otherwise load default (3)
+      loadAdmin(showAdmin ? null : 3);
+
+      if (showAdmin) {
+          document.getElementById('staffSection').style.display = 'none';
+          document.getElementById('customerSection').style.display = 'none';
+      } else {
+          document.getElementById('customerSection').style.display = 'block';
+          document.getElementById('staffSection').style.display = 'block';
+          document.getElementById('adminSection').style.display = 'block'; // ← add this
+      }
+
+      
+      // Change button text accordingly using the admin button id
+      const btn = document.getElementById('allAdmin');
+      if (btn) {
+          btn.textContent = showAdmin ? 'Show Less' : 'See All';
+      }
+
+      // Toggle visibility of customer and staff sections for admin view
+
+  }
+  </script>
+</html>

@@ -7,12 +7,14 @@ import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import authRoutes from './routes/authRoutes.js'
 import customerRoutes from './routes/customerRoutes.js'
+import staffRoutes from './routes/staffRoutes.js'
 import dashboardRoutes from './routes/dashboardRoutes.js'
 import profileRoutes from './routes/profileRoutes.js'
 import foodRoutes from './routes/foodRoutes.js'
 import orderRoutes from './routes/orderRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js'
 import rewardRoutes from './routes/rewardRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
 
 
 const app = express();
@@ -29,6 +31,8 @@ app.use('/foods', foodRoutes)
 app.use('/orders', orderRoutes);
 app.use('/feedback', feedbackRoutes);
 app.use('/rewards', rewardRoutes);
+app.use('/admin', adminRoutes);
+app.use('/staff', staffRoutes);
 
 
 //Get the file path from the URL of the current module

@@ -1,4 +1,4 @@
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6InN0YWZmIiwiaWF0IjoxNzUyNjU0NzM3LCJleHAiOjE3NTI3NDExMzd9.FJtb5ejkCmKK-JEFkepIeRj_vFAhASfEbToKynqPcfE
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6InN0YWZmIiwiaWF0IjoxNzUyOTM5MTExLCJleHAiOjE3NTMwMjU1MTF9.ELqVwwuHdULt8BjaTcd8a2ylSCZMvMYTBgVDvym_cmc
 
 ### 
 GET http://localhost:51540/1
@@ -51,3 +51,35 @@ Authorization: Bearer {{token}}
     "food_ids": [],
     "reward_code": "3BJPYpOZb8"
 }
+
+### get user profile
+GET http://localhost:51540/customers/top
+Authorization: Bearer {{token}}
+
+### get user profile
+GET http://localhost:51540/customers/customer/allCust
+Authorization: Bearer {{token}}
+
+### get user profile
+GET http://localhost:51540/staff
+Authorization: Bearer {{token}}
+
+### get user profile
+GET http://localhost:51540/admin
+Authorization: Bearer {{token}}
+
+### get user profile
+PUT  http://localhost:51540/staff/update/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "username": "Chaewon",
+    "email": "chaewonbaby"
+}
+### get user profile
+DELETE http://localhost:51540/customers/delete/9
+Authorization: Bearer {{token}}
+### get user profile
+DELETE http://localhost:51540/staff/delete/9
+Authorization: Bearer {{token}}

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #ffffff;
+      color: #333;
+    }
+
+    #header {
+      background-color: white;
+      border-bottom: 4px solid #b91c1c;
+      padding: 20px 330px;
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      justify-content: space-between;
+    }
+
+    #header img {
+      height: 70px;
+      object-fit: contain;
+    }
+
+    .profile-container {
+      position: relative;
+      margin-left: 15px;
+    }
+
+    .profile-icon {
+      width: 70px;
+      height: 70px;
+      background-color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b91c1c;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 32px;
+    }
+
+    .profile-dropdown {
+      position: absolute;
+      right: 290px;
+      top: 80px;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      min-width: 140px;
+      white-space: nowrap;
+      z-index: 1000;
+      width: 140px;
+    }
+
+    .profile-dropdown a {
+      padding: 10px 15px;
+      color: #b91c1c;
+      text-decoration: none;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      display: block;
+    }
+
+    .profile-dropdown a:last-child {
+      border-bottom: none;
+    }
+
+    .profile-dropdown a:hover {
+      background-color: #ffeaea;
+    }
+
+    #toggle-profile {
+      position: fixed;
+      top: 134px;
+      right: 10px;
+      width: 315px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 16px;
+      overflow: visible;
+      z-index: 999;
+      display: none;
+      font-family: Arial, sans-serif;
+      padding-top: 75px;
+    }
+
+    .profile-header {
+      background-color: #b91c1c;
+      color: white;
+      text-align: center;
+      padding: 40px 20px 20px;
+      position: relative;
+    }
+
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      font-size: 42px;
+      top: -50px;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+    }
+
+    .profile-header h2 {
+      margin: 10px 0 0;
+      font-size: 20px;
+    }
+
+    .profile-header span {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .profile-body {
+      padding: 20px;
+      font-size: 14px;
+    }
+
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 0 10px;
+    }
+
+    .profile-label {
+      color: #555;
+    }
+
+    .profile-value {
+      font-weight: bold;
+    }
+
+    .reward-card {
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .reward-info {
+      max-width: 70%;
+    }
+
+    .reward-actions {
+      margin-left: auto;
+    }
+
+    #send-feedback h2 {
+      color: #b91c1c;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    #feedbackForm {
+      text-align: center;
+    }
+
+    #feedbackMessage {
+      width: 100%;
+      max-width: 500px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: vertical;
+      font-size: 14px;
+    }
+
+    #feedbackForm button {
+      padding: 10px 20px;
+      margin: 10px 5px 0;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #feedbackForm button[type="submit"] {
+      background-color: #b91c1c;
+      color: white;
+    }
+
+    #cancelFeedbackBtn {
+      background-color: #e5e7eb;
+      color: #333;
+    }
+  </style>
+  <script>
+    // --- Auth check and role redirect ---
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('No token found. Redirecting...');
+      window.location.href = '/';
+    }
+
+    fetch('/profile', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Unauthorized');
+      return res.json();
+    })
+    .then(data => {
+      if (data.role !== 'admin') {
+        window.location.href = '/';
+      }
+
+      return data
+    })
+    .catch(err => {
+      alert('Access denied or token invalid. Redirecting...');
+      window.location.href = '/';
+    });
+
+    // --- Profile dropdown logic ---
+    document.addEventListener('DOMContentLoaded', () => {
+      const profileDropdown = document.getElementById('profileDropdown');
+      const profileIcon = document.getElementById('profileIcon');
+      const toggleProfile = document.getElementById('toggle-profile');
+
+      profileIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleProfile.style.display = 'none';
+        profileVisible = false;
+        profileDropdown.style.display = profileDropdown.style.display === 'flex' ? 'none' : 'flex';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!profileDropdown.contains(e.target) && !profileIcon.contains(e.target)) {
+          profileDropdown.style.display = 'none';
+        }
+        if (!toggleProfile.contains(e.target) && !profileIcon.contains(e.target)) {
+          toggleProfile.style.display = 'none';
+        }
+      });
+    });
+
+    fetch('/admin/home')
+        .then(res => res.text())
+        .then(html => {
+            document.getElementById('cont').innerHTML = html;
+            document.body.style.visibility = 'visible';
+        }); 
+  </script>
+</head>
+<body>
+  <header id="header">
+    <img src="/images/logo.jpg" alt="">
+    <div class="profile-container">
+      <div class="profile-icon" id="profileIcon">👤</div>
+    </div>
+    <div class="profile-dropdown" id="profileDropdown">
+      <a href="#" onclick="profile()">View Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </div>
+  </header>
+
+  <div id="toggle-profile"></div>
+
+  <main id="cont" style="padding: 0px 20px; max-width: 1210px; margin: 0 auto;">
+  </main>
+
+  <script>
+    // --- Profile and reward logic ---
+    const toggleProfile = document.getElementById('toggle-profile');
+    let activeOrderId = null;
+    let profileVisible = false;
+
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+
+    function profile() {
+      document.getElementById('profileDropdown').style.display = 'none';
+      fetch('/profile', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log(data.username)
+        const toggleProfile = document.getElementById('toggle-profile');
+        toggleProfile.innerHTML = `
+          <div class="profile-header">
+            <div class="profile-avatar">👤</div>
+            <h2>${data.username}</h2>
+            <span>${data.user_code}</span>
+          </div>
+          <div class="profile-body">
+            <div class="profile-row">
+              <span class="profile-label">Email</span>
+              <span class="profile-value">${data.email}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Role</span>
+              <span class="profile-value">${data.role}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Points</span>
+              <span class="profile-value">${data.points}</span>
+            </div>
+          </div>
+        `;
+        toggleProfile.style.display = 'block';
+        profileVisible = true;
+      })
+      .catch(() => {
+        alert('Token invalid. Redirecting...');
+        window.location.href = '/';
+      });
+    }
+
+    // --- Helper for reward button style ---
+    function btnStyle(isNo = false) {
+      return `
+        padding: 8px 16px;
+        background-color: ${isNo ? '#e5e7eb' : '#b91c1c'};
+        color: ${isNo ? '#333' : 'white'};
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        ${isNo ? 'margin-left: 10px;' : ''}
+      `;
+    }
+
+       // 1. Load profile info
+  fetch('/profile', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Unauthorized');
+    return res.json();
+  })
+  .then(data => {
+    const adminName = document.getElementById('adminName');
+    if (adminName) adminName.textContent = data.username;
+  })
+  .catch(err => {
+    alert('Access denied or token invalid. Redirecting...');
+    window.location.href = '/';
+  });
+
+    // 2. Load total customers
+  fetch('/customers/count', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Unauthorized');
+    return res.json();
+  })
+  .then(data => {
+    const totalCustomers = document.getElementById('totalCustomers');
+    if (totalCustomers) totalCustomers.textContent = data[0].totalCustCount;
+  })
+  .catch(err => {
+    alert('Access denied or token invalid. Redirecting...');
+    window.location.href = '/';
+  });
+
+    // 3. Load verified customers count
+  fetch('/customers/verfied/count', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Unauthorized');
+    return res.json();
+  })
+  .then(data => {
+    const verifiedCustomers = document.getElementById('verifiedCustomers');
+    if (verifiedCustomers) verifiedCustomers.textContent = data[0].totalCustCount;
+  })
+  .catch(err => {
+    alert('Access denied or token invalid. Redirecting...');
+    window.location.href = '/';
+  });
+
+    // 3. Load verified customers count
+  fetch('/customers/unverified/count', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Unauthorized');
+    return res.json();
+  })
+  .then(data => {
+      const unverifiedCustomers = document.getElementById('unverifiedCustomers');
+      if (unverifiedCustomers) unverifiedCustomers.textContent = data[0].totalCustCount;
+  })
+  .catch(err => {
+    alert('Access denied or token invalid. Redirecting...');
+    window.location.href = '/';
+  });
+
+    // 3. Load verified customers count
+  fetch('/feedback/recent/count', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Unauthorized');
+    return res.json();
+  })
+  .then(data => {
+    console.log(data.recentFeedbackCount)
+    const feedbackCount = document.getElementById('feedbackCount')
+    feedbackCount.textContent = data.recentFeedbackCount
+  })
+  .catch(err => {
+    alert('Access denied or token invalid. Redirecting...');
+    window.location.href = '/';
+  });
+
+    // 3. Load verified customers count
+  fetch('/customers/top', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Unauthorized');
+    return res.json();
+  })
+  .then(data => {
+    const top1 = document.getElementById('top1')
+    const top2 = document.getElementById('top2')
+    const top3 = document.getElementById('top3')
+    const top4 = document.getElementById('top4')
+    const top5 = document.getElementById('top5')
+
+    top1.innerHTML = ` <strong> ${data[0].username} </strong> ${data[0].points} `
+
+    top2.innerHTML = ` <strong> ${data[1].username} </strong> ${data[1].points} `
+
+    top3.innerHTML = ` <strong> ${data[2].username} </strong> ${data[2].points} `
+
+    top4.innerHTML = ` <strong> ${data[3].username} </strong> ${data[3].points} `
+
+    top5.innerHTML = ` <strong> ${data[4].username} </strong> ${data[4].points} `
+  })
+  .catch(err => {
+    alert('Access denied or token invalid. Redirecting...');
+    console.error("customers error:", err)
+    // window.location.href = '/';  
+  });
+
+  fetch('/customers/recent', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const list = document.getElementById('pending-list');
+    list.innerHTML = ''; // clear existing entries
+
+    data.forEach(user => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.innerHTML = `
+        ${user.username} registered on ${new Date(user.created_at).toLocaleDateString()}
+      `;
+      list.appendChild(li);
+    });
+
+    console.log(data)
+  })
+  .catch(err => {
+    console.error("Failed to fetch recent users:", err);
+  });
+
+  </script>
+</body>
+</html>

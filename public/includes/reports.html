@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports & Feedback - Admin</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="adminStyles.css">
+</head>
+<body>
+
+            <div style="display: flex; justify-content: center; margin-top: 20px;">
+                <div class="tab-buttons">
+                    <a href="adminDashboard.html"><button>Home</button></a>
+                    <a href="users.html"><button>Users</button></a>
+                    <a href="feedbacks.html"><button class="active">Feedbacks</button></a>
+                    <a href="rewards.html"><button>Incentives</button></a>
+                </div>
+            </div>
+            <h1 class="ml-3">Reports & Feedback</h1>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3>Customer Feedback (Recent)</h3>
+                            <p>Latest feedback from customers will be displayed here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3 class="mb-0">Total BradPoint Users</h3>
+                            <div class="card w-auto d-inline-block p-2">
+                                <div class="card-body p-2 m-0">
+                                    <p class="h4 m-0">1,234 users</p>
+                                </div>
+                            </div>
+
+                            <p class="h5 mt-3">Top Point Earners</p>
+                            <div class="card-body p-0 mb-3 scrollable-card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped mb-0">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Name</th>
+                                                <th>Points</th>
+                                                <th>Last Visit</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>1</td>
+                                                <td>Juan Dela Cruz</td>
+                                                <td>54,500</td>
+                                                <td>July 10, 2025</td>
+                                            </tr>
+                                            <tr>
+                                                <td>2</td>
+                                                <td>Maria Clara</td>
+                                                <td>53,500</td>
+                                                <td>July 9, 2025</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <p class="h5 mb-0 mt-3">BradPoints Users w/ no Redemptions</p>
+                            <div class="card w-auto d-inline-block p-2">
+                                <div class="card-body p-2 m-0">
+                                    <p class="h4 m-0">392 users</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3>Product Availment Statistics</h3>
+                            <p class="h5"><b>Steamed Rice</b> is the most availed item, and is found in 67% of all redemptions.</p>
+                            <div class="card-body p-0 mb-3 scrollable-card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped mb-0">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Item Name</th>
+                                                <th>Point Cost</th>
+                                                <th># of Redemptions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>1</td>
+                                                <td>Steamed Rice</td>
+                                                <td>100</td>
+                                                <td>7,423</td>
+                                            </tr>
+                                            <tr>
+                                                <td>2</td>
+                                                <td>Batchoy </td>
+                                                <td>125</td>
+                                                <td>4,234</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('pointsChart').getContext('2d');
+
+        const pointsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep','Oct','Nov','Dec'], // Months or Weeks
+            datasets: [{
+                label: 'Points Earned',
+                data: [19000, 14000, 25000, 20000, 19000, 15000, 13000, 17000, 21000, 24000, 25000, 27000], // Replace with your real data
+                fill: false,
+                borderColor: '#941A1C',
+                backgroundColor: '#941A1C',
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+            },
+            options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                display: true,
+                position: 'top',
+                },
+                tooltip: {
+                mode: 'index',
+                intersect: false,
+                }
+            },
+            scales: {
+                x: {
+                title: {
+                    display: true,
+                    text: 'Month'
+                }
+                },
+                y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Points'
+                }
+                }
+            }
+            }
+        });
+
+        const ctx2 = document.getElementById('redeemedChart').getContext('2d');
+
+        const redeemedChart = new Chart(ctx2, {
+            type: 'line',
+            data: {
+            labels: [
+                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+            ],
+            datasets: [{
+                label: 'Points Redeemed',
+                data: [
+                12000, 15000, 17000, 13000, 16000, 18000,
+                20000, 19000, 22000, 21000, 23000, 25000
+                ],
+                fill: false,
+                borderColor: '#941A1C',
+                backgroundColor: '#941A1C',
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+            },
+            options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                display: true,
+                position: 'top',
+                },
+                tooltip: {
+                mode: 'index',
+                intersect: false,
+                }
+            },
+            scales: {
+                x: {
+                title: {
+                    display: true,
+                    text: 'Month'
+                }
+                },
+                y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Points'
+                }
+                }
+            }
+            }
+        });
+    </script>
+</body>
+</html>

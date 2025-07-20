@@ -65,8 +65,12 @@
 
             if(data.user.role === 'customer') {
               window.location.href = '/dashboard/customer'
+            } else if(data.user.role === 'staff') {
+              window.location.href = '/dashboard/staff'
+            } else if(data.user.role === 'admin') {
+              window.location.href = '/dashboard/admin'
             } else {
-              window.location.href = '/dashboard';       // Redirect to dashboard
+              window.location.href = '/';       // Redirect to dashboard
             }
 
         } else {

@@ -4,8 +4,9 @@ import { verifyToken } from '../middleware/authMiddleware.js';
 import db from '../db.js';
 
 const router = express.Router();
+
 router.post('/sendFeedback', verifyToken, (req, res) => {
-  const { message, order_id } = req.body;
+  const { message, order_id, rating } = req.body;
   const user_id = req.user.id;
 
   if (!message || message.trim() === '') {
@@ -17,8 +18,8 @@ router.post('/sendFeedback', verifyToken, (req, res) => {
   }
 
   // Step 1: Insert feedback
-  const query = 'INSERT INTO feedback (user_id, order_id, message) VALUES (?, ?, ?)';
-  db.query(query, [user_id, order_id, message], (err, result) => {
+  const query = 'INSERT INTO feedback (user_id, order_id, message, rating) VALUES (?, ?, ?, ?)';
+  db.query(query, [user_id, order_id, message, rating], (err, result) => {
     if (err) return res.status(500).json({ message: 'Error saving feedback' });
 
     // ✅ Step 2: Update orders table to mark as given
@@ -33,6 +34,7 @@ router.post('/sendFeedback', verifyToken, (req, res) => {
     });
   });
 });
+
 
 
 // POST /feedback/dismiss

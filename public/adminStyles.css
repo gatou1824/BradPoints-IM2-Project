@@ -1,10 +1,3 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    visibility: hidden;
-}
 .sidebar {
     width: 250px;
     background-color: #941A1C;
@@ -109,4 +102,30 @@ th {
 
 .d-flex{
     width: 100%;
+}
+
+.tab-buttons {
+    /* position: fixed;     */
+    display: flex; /* changed from inline-flex */
+    border: 2px solid #b91c1c;
+    border-radius: 9999px;
+    overflow: hidden;
+    background-color: #b91c1c;
+    /* z-index: 1000; */
+}
+
+.tab-buttons button {
+background-color: #b91c1c;
+color: white;
+padding: 10px 20px;
+border-radius: 9999px;
+border: none;
+cursor: pointer;
+font-weight: bold;
+}
+
+.tab-buttons button.active {
+background-color: white;
+color: #b91c1c;
+font-weight: bold;
 }

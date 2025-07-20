@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #fff;
+      color: #333;
+    }
+    #header {
+      background-color: #fff;
+      border-bottom: 4px solid #b91c1c;
+      padding: 20px 330px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #header img {
+      height: 70px;
+      object-fit: contain;
+    }
+    .profile-container {
+      position: relative;
+      margin-left: 15px;
+    }
+    .profile-icon {
+      width: 70px;
+      height: 70px;
+      background-color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b91c1c;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 32px;
+    }
+    .profile-dropdown {
+      position: absolute;
+      right: 290px;
+      top: 80px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      min-width: 140px;
+      white-space: nowrap;
+      z-index: 1000;
+      width: 140px;
+    }
+    .profile-dropdown a {
+      padding: 10px 15px;
+      color: #b91c1c;
+      text-decoration: none;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      display: block;
+    }
+    .profile-dropdown a:last-child {
+      border-bottom: none;
+    }
+    .profile-dropdown a:hover {
+      background-color: #ffeaea;
+    }
+    #toggle-profile {
+      position: fixed;
+      top: 134px;
+      right: 10px;
+      width: 315px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 16px;
+      z-index: 999;
+      display: none;
+      font-family: Arial, sans-serif;
+      padding-top: 75px;
+    }
+    .profile-header {
+      background-color: #b91c1c;
+      color: #fff;
+      text-align: center;
+      padding: 40px 20px 20px;
+      position: relative;
+    }
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      font-size: 42px;
+      top: -50px;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+    }
+    .profile-header h2 {
+      margin: 10px 0 0;
+      font-size: 20px;
+    }
+    .profile-header span {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    .profile-body {
+      padding: 20px;
+      font-size: 14px;
+    }
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 0 10px;
+    }
+    .profile-label {
+      color: #555;
+    }
+    .profile-value {
+      font-weight: bold;
+    }
+    .reward-card {
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .reward-info {
+      max-width: 70%;
+    }
+    .reward-actions {
+      margin-left: auto;
+    }
+  </style>
+  <script>
+    // Token check and redirect
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('No token found. Redirecting...');
+      window.location.href = '/';
+    }
+
+    // Role check
+    fetch('/profile', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Unauthorized');
+      return res.json();
+    })
+    .then(data => {
+      if (data.role !== 'admin') {
+        window.location.href = '/';
+      }
+    })
+    .catch(() => {
+      alert('Access denied or token invalid. Redirecting...');
+      window.location.href = '/';
+    });
+
+    // Profile dropdown logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const profileDropdown = document.getElementById('profileDropdown');
+      const profileIcon = document.getElementById('profileIcon');
+      const toggleProfile = document.getElementById('toggle-profile');
+      let profileVisible = false;
+
+      profileIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleProfile.style.display = 'none';
+        profileVisible = false;
+        profileDropdown.style.display = profileDropdown.style.display === 'flex' ? 'none' : 'flex';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!profileDropdown.contains(e.target) && !profileIcon.contains(e.target)) {
+          profileDropdown.style.display = 'none';
+        }
+        if (!toggleProfile.contains(e.target) && !profileIcon.contains(e.target)) {
+          toggleProfile.style.display = 'none';
+        }
+      });
+    });
+
+    // Load profile management HTML
+    fetch('/admin/feedbacks')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('cont').innerHTML = html;
+        document.body.style.visibility = 'visible';
+      });
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+
+    // Profile modal
+    function profile() {
+      document.getElementById('profileDropdown').style.display = 'none';
+      fetch('/profile', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const toggleProfile = document.getElementById('toggle-profile');
+        toggleProfile.innerHTML = `
+          <div class="profile-header">
+            <div class="profile-avatar">👤</div>
+            <h2>${data.username}</h2>
+            <span>${data.user_code}</span>
+          </div>
+          <div class="profile-body">
+            <div class="profile-row">
+              <span class="profile-label">Email</span>
+              <span class="profile-value">${data.email}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Role</span>
+              <span class="profile-value">${data.role}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Points</span>
+              <span class="profile-value">${data.points}</span>
+            </div>
+          </div>
+        `;
+        toggleProfile.style.display = 'block';
+      })
+      .catch(() => {
+        alert('Token invalid. Redirecting...');
+        window.location.href = '/';
+      });
+    }
+  </script>
+</head>
+<body>
+  <header id="header">
+    <img src="/images/logo.jpg" alt="">
+    <div class="profile-container">
+      <div class="profile-icon" id="profileIcon">👤</div>
+    </div>
+    <div class="profile-dropdown" id="profileDropdown">
+      <a href="#" onclick="profile()">View Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </div>
+  </header>
+  <div id="toggle-profile"></div>
+  <main id="cont" style="padding: 0px 20px; max-width: 1210px; margin: 0 auto;"></main>
+</body>
+</html>

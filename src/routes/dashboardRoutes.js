@@ -14,11 +14,21 @@ const __dirname = dirname(__filename);
 
 // Serve dashboard.html only if token is valid
 router.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', '../public', 'dashboard.html'));
+    res.sendFile(path.join(__dirname, '..', '../public', 'login.html'));
 
+})
+
+router.get('/staff', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', '../public', 'staffDashboard.html'));
 })
 
 router.get('/customer', (req, res) => {
     res.sendFile(path.join(__dirname, '..', '../public', 'customerDashboard.html'));
 })
+
+router.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', '../public', 'adminDashboard.html'));
+})
+
+
 export default router;
