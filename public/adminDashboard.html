@@ -427,9 +427,9 @@
     return res.json();
   })
   .then(data => {
-    console.log(data.recentFeedbackCount)
+    console.log(data.count)
     const feedbackCount = document.getElementById('feedbackCount')
-    feedbackCount.textContent = data.recentFeedbackCount
+    feedbackCount.textContent = data.count
   })
   .catch(err => {
     alert('Access denied or token invalid. Redirecting...');

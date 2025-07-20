@@ -233,89 +233,29 @@
       window.location.href = '/';
     });
 
-fetch('/rewards/progress', {
-  headers: { Authorization: `Bearer ${token}` }
-})
-.then(res => res.json())
-.then(data => {
-  const rewardsContainer = document.getElementById('rewards');
-  rewardsContainer.innerHTML = ''; // clear previous entries
-  if (!Array.isArray(data)) {
-    console.error('Expected array, got:', data);
-    return;
-  } 
-data.forEach(r => {
-  const div = document.createElement('div');
-  div.className = 'reward-card';
+    // Profile dropdown logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const profileDropdown = document.getElementById('profileDropdown');
+      const profileIcon = document.getElementById('profileIcon');
+      const toggleProfile = document.getElementById('toggle-profile');
+      let profileVisible = false;
 
-  const info = document.createElement('div');
-  info.className = 'reward-info';
+      profileIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleProfile.style.display = 'none';
+        profileVisible = false;
+        profileDropdown.style.display = profileDropdown.style.display === 'flex' ? 'none' : 'flex';
+      });
 
-  const actions = document.createElement('div');
-  actions.className = 'reward-actions';
-
-  // === UI display logic ===
-
-  info.innerHTML = `<strong>${r.reward_name}</strong><br>`;
-
-  if (r.redeemed) {
-    info.innerHTML += `<span style="color: green;">✅ Reward already used</span>`;
-  } else if (r.code) {
-    info.innerHTML += `
-      <span>Code: ${r.code}</span><br>
-      <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
-    `;
-  } else {
-    info.innerHTML += `<span>Progress: ${r.progress} / ${r.required_points}</span><br>`;
-
-    if (r.claimed_recently) {
-      actions.innerHTML = `<p style="color: green;">Already claimed</p>`;
-    } else if (r.can_claim) {
-      const btn = document.createElement('button');
-      btn.textContent = 'Redeem';
-      btn.style = btnStyle();
-      btn.onclick = () => claimReward(r.reward_id, btn);
-      actions.appendChild(btn);
-    } else {
-      actions.innerHTML = `<p style="color: gray;">Not enough points yet</p>`;
-    }
-  }
-
-  div.appendChild(info);
-  div.appendChild(actions);
-  rewardsContainer.appendChild(div);
-});
-})
-.catch(err => {
-  console.error('Failed to load rewards:', err);
-});
-
-
-
-document.addEventListener('DOMContentLoaded', () => {
-  const profileDropdown = document.getElementById('profileDropdown');
-  const profileIcon = document.getElementById('profileIcon');
-  const toggleProfile = document.getElementById('toggle-profile');
-
-  profileIcon.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleProfile.style.display = 'none';
-    profileVisible = false;
-    profileDropdown.style.display = profileDropdown.style.display === 'flex' ? 'none' : 'flex';
-  });
-
-  document.addEventListener('click', (e) => {
-    // Close dropdown if click is outside of profileIcon and profileDropdown
-    if (!profileDropdown.contains(e.target) && !profileIcon.contains(e.target)) {
-      profileDropdown.style.display = 'none';
-    }
-
-    // Close toggle-profile if click is outside
-    if (!toggleProfile.contains(e.target) && !profileIcon.contains(e.target)) {
-      toggleProfile.style.display = 'none';
-    }
-  });
-});
+      document.addEventListener('click', (e) => {
+        if (!profileDropdown.contains(e.target) && !profileIcon.contains(e.target)) {
+          profileDropdown.style.display = 'none';
+        }
+        if (!toggleProfile.contains(e.target) && !profileIcon.contains(e.target)) {
+          toggleProfile.style.display = 'none';
+        }
+      });
+    });
 
     fetch('/admin/rewards')  
         .then(res => res.text())
@@ -324,6 +264,49 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.style.visibility = 'visible';
         });
 
+        function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+
+    // Profile modal
+    function profile() {
+      document.getElementById('profileDropdown').style.display = 'none';
+      fetch('/profile', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const toggleProfile = document.getElementById('toggle-profile');
+        toggleProfile.innerHTML = `
+          <div class="profile-header">
+            <div class="profile-avatar">👤</div>
+            <h2>${data.username}</h2>
+            <span>${data.user_code}</span>
+          </div>
+          <div class="profile-body">
+            <div class="profile-row">
+              <span class="profile-label">Email</span>
+              <span class="profile-value">${data.email}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Role</span>
+              <span class="profile-value">${data.role}</span>
+            </div>
+            <div class="profile-row">
+              <span class="profile-label">Points</span>
+              <span class="profile-value">${data.points}</span>
+            </div>
+          </div>
+        `;
+        toggleProfile.style.display = 'block';
+      })
+      .catch(() => {
+        alert('Token invalid. Redirecting...');
+        window.location.href = '/';
+      });
+    }
   </script>
 </head>
 <body>
@@ -352,47 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeOrderId = null;
 
     // Load customer profile (points + code)
-fetch('/profile', {
-  method: 'GET',
-  headers: { Authorization: `Bearer ${token}` }
-})
-.then(res => res.json())
-.then(data => {
-  document.getElementById('points-circle').textContent = data.points;
-  document.getElementById('user-code').textContent = data.user_code;
-})
-.catch(err => {
-  console.error('Failed to fetch profile:', err);
-});
-
-// Claim logic
-function claimReward(id, btn) {
-  fetch(`/rewards/claim/${id}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(res => {
-    if (!res.ok) throw new Error('Claim failed');
-    return res.json();
-  })
-  .then(data => {
-    const card = btn.closest('.reward-card');
-    const info = card.querySelector('.reward-info');
-    const actions = card.querySelector('.reward-actions');
-
-    info.innerHTML = `
-      <strong>Code:</strong> ${data.code}<br>
-      <small>${data.message}</small>
-    `;
-
-    actions.innerHTML = ''; // optionally remove buttons
-  })
-  .catch(err => {
-    alert('Error claiming reward.');
-    console.error(err);
-  });
-}
-
     function logout() {
       localStorage.removeItem('token');
       window.location.href = '/';
@@ -439,188 +381,125 @@ function claimReward(id, btn) {
       });
     }
 
-function checkForRecentOrders() {
-  fetch('/orders/pending-feedback', {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (Array.isArray(data) && data.length > 0) {
-      data.reverse().forEach(order => {
-        renderFeedbackPrompt(order.id, order.created_at);
-      });
-    }
-  });
-}
-
-function giveFeedback() {
-  document.getElementById('feedbackPrompt').style.display = 'none';
-  document.getElementById('send-feedback').style.display = 'block';
-}
-
-function showFeedbackForm(orderId, btn) {
-  activeOrderId = orderId;
-  document.getElementById('send-feedback').style.display = 'block';
-
-  // ⬇️ This hides the entire prompt container after clicking "Yes"
-  const container = btn.closest('.reward-card');
-  if (container) container.remove();
-}
-
-
-function dismissFeedbackPrompt(btn) {
-  const container = btn.closest('.reward-card');
-  const orderId = container.getAttribute('data-order-id');
-
-  fetch(`/feedback/dismissFeedback/${orderId}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
-  .then(res => res.json())
-  .then(data => {
-    container.remove(); // ✅ visually remove it
-  })
-  .catch(err => {
-    console.error('Failed to dismiss feedback:', err);
-  });
-}
-
-
-
-// Fix: Submit feedback using activeOrderId and bind listener properly
-document.getElementById('feedbackForm').addEventListener('submit', function (e) {
-  e.preventDefault();
-
-  const message = document.getElementById('feedbackMessage').value;
-
-  if (!activeOrderId) {
-    alert('No order selected for feedback.');
-    return;
-  }
-
-  fetch('/feedback/sendFeedback', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ message, order_id: activeOrderId })
-  })
+    document.addEventListener('DOMContentLoaded', () => {
+    
+      fetch('/rewards/redemptions', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      })
     .then(res => res.json())
     .then(data => {
-      document.getElementById('feedbackStatus').textContent = data.message;
-      document.getElementById('feedbackMessage').value = '';
-      document.getElementById('send-feedback').style.display = 'none';
-      alert('Feedback sent successfully!');
-      activeOrderId = null;
-      checkForRecentOrders(); // Refresh prompts
+      const tbody = document.getElementById('rewardsTableBody');
+      tbody.innerHTML = '';
+      console.log(data)
+      data.forEach((reward, index) => {
+      const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${reward.food_id}</td>
+          <td>${reward.food_name}</td>
+          <td>${reward.reward_name}</td>
+          <td>${reward.required_points.toLocaleString()}</td>
+          <td>${reward.times_redeemed}</td>
+          <td>
+            <button class="btn btn-sm btn-primary edit-btn">Edit</button>
+            <button class="btn btn-sm btn-success save-btn" style="display:none;">Save</button>
+            <button class="btn btn-sm btn-secondary cancel-btn" style="display:none;">Cancel</button>
+            <button class="btn btn-sm btn-danger delete-btn">Delete</button>
+          </td>
+        `;
+
+        const [foodIdTd, foodNameTd, rewardNameTd, requiredPointsTd, timesRedeemedTd] = tr.children
+
+        //handle edit
+        tr.querySelector('.edit-btn').addEventListener('click', () => {
+        foodIdTd.innerHTML = `<input type="number" value="${reward.food_id}" class="form-control form-control-sm">`;
+        rewardNameTd.innerHTML = `<input type="text" value="${reward.reward_name}" class="form-control form-control-sm">`;
+        requiredPointsTd.innerHTML = `<input type="number" value="${reward.required_points}" class="form-control form-control-sm">`;
+
+
+        tr.querySelector('.edit-btn').style.display = 'none';
+        tr.querySelector('.save-btn').style.display = 'inline-block';
+        tr.querySelector('.cancel-btn').style.display = 'inline-block';
+        tr.querySelector('.delete-btn').style.display = 'none';
+      });
+
+      //handle save
+        tr.querySelector('.save-btn').addEventListener('click', () => {
+        const updateFoodId = foodIdTd.querySelector('input').value;
+        const updateName = rewardNameTd.querySelector('input').value;
+        const updateRequiredPoints = requiredPointsTd.querySelector('input').value;
+
+        fetch(`/rewards/update/${reward.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            food_id: updateFoodId,
+            reward_name: updateName,
+            required_points: parseInt(updateRequiredPoints),
+          })
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to update');
+          return res.json();
+        })
+        .then(updated => {
+          // Refresh the row
+          foodIdTd.textContent = updated.food_id;
+          rewardNameTd.textContent = updated.reward_name;
+          requiredPointsTd.textContent = updated.required_points;
+
+          tr.querySelector('.edit-btn').style.display = 'inline-block';
+          tr.querySelector('.save-btn').style.display = 'none';
+          tr.querySelector('.cancel-btn').style.display = 'none';
+          tr.querySelector('.delete-btn').style.display = 'inline-block';
+
+          window.location.reload();
+        })
+        .catch(err => {
+          console.error("Update error:", err);
+        });
+      });
+
+      tr.querySelector('.cancel-btn').addEventListener('click', () => {
+        foodIdTd.textContent = reward.food_id;
+        rewardNameTd.textContent = reward.reward_name;
+        requiredPointsTd.textContent = reward.required_points;
+        
+
+        tr.querySelector('.edit-btn').style.display = 'inline-block';
+        tr.querySelector('.save-btn').style.display = 'none';
+        tr.querySelector('.cancel-btn').style.display = 'none';
+        tr.querySelector('.delete-btn').style.display = 'inline-block';
+      });
+
+      
+      tr.querySelector('.delete-btn').addEventListener('click', () => {
+      if (confirm(`Are you sure you want to delete ${reward.reward_name}?`)) {
+        fetch(`/rewards/delete/${reward.id}`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('Delete failed');
+          tr.remove(); // Remove row from table
+        })
+        .catch(err => {
+          console.error("Delete error:", err);
+        });
+      }
+    });
+
+      tbody.appendChild(tr);
+      });
     })
-    .catch(err => {
-      document.getElementById('feedbackStatus').textContent = 'Failed to send feedback.';
-      console.error(err);
+    .catch(error => {
+      console.error('Error loading rewards:', error);
     });
 });
 
-
-function renderFeedbackPrompt(orderId, orderDate) {
-  const container = document.createElement('div');
-  container.className = 'reward-card';
-  container.setAttribute('data-order-id', orderId); // 🟢 Add this line
-
-  const info = document.createElement('div');
-  info.className = 'reward-info';
-  info.innerHTML = `
-    <strong>Feedback Request</strong><br>
-    <span>You ordered from us on ${new Date(orderDate).toLocaleString()} — would you like to leave feedback?</span>
-  `;
-
-  const actions = document.createElement('div');
-  actions.className = 'reward-actions';
-
-  const yesBtn = document.createElement('button');
-  yesBtn.textContent = 'Yes';
-  yesBtn.style = btnStyle();
-  yesBtn.onclick = () => showFeedbackForm(orderId, yesBtn);
-
-  const noBtn = document.createElement('button');
-  noBtn.textContent = 'No';
-  noBtn.style = btnStyle(true);
-  noBtn.onclick = () => dismissFeedbackPrompt(noBtn);
-
-  actions.appendChild(yesBtn);
-  actions.appendChild(noBtn);
-  container.appendChild(info);
-  container.appendChild(actions);
-  document.getElementById('feedback').appendChild(container);
-}
-
-function btnStyle(isNo = false) {
-  return `
-    padding: 8px 16px;
-    background-color: ${isNo ? '#e5e7eb' : '#b91c1c'};
-    color: ${isNo ? '#333' : 'white'};
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    ${isNo ? 'margin-left: 10px;' : ''}
-  `;
-}
-
-function loadHistory() {
-  fetch('/rewards/history', {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(res => res.json())
-  .then(data => {
-    const historyContainer = document.getElementById('history');
-    historyContainer.innerHTML = '';
-
-    if (data.length === 0) {
-      historyContainer.innerHTML = '<p style="text-align:center;">No transaction history yet.</p>';
-      return;
-    }
-
-    data.forEach(h => {
-      const div = document.createElement('div');
-      div.className = 'reward-card';
-
-      const info = document.createElement('div');
-      info.className = 'reward-info';
-
-      if (h.type === 'Reward') {
-        info.innerHTML = `
-          <strong>🎁 ${h.item}</strong><br>
-          <span>Code: ${h.code}</span><br>
-          <small>Claimed at: ${new Date(h.date).toLocaleString()}</small><br>
-        `;
-      } else {
-        info.innerHTML = `
-          <strong>🛒 ${h.item}</strong><br>
-          <small>Ordered at: ${new Date(h.date).toLocaleString()}</small>
-        `;
-      }
-
-      div.appendChild(info);
-      historyContainer.appendChild(div);
-    });
-  })
-  .catch(err => {
-    console.error('Failed to load full history:', err);
-    document.getElementById('history').innerHTML = '<p style="color:red;">Unable to fetch history.</p>';
-  });
-}
-
-function cancelFeedback() {
-  document.getElementById('send-feedback').style.display = 'none';
-  document.getElementById('feedbackMessage').value = '';
-  activeOrderId = null;
-}
-
-
-checkForRecentOrders();
   </script>
 </body>
 </html>

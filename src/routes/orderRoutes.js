@@ -269,5 +269,25 @@ router.get('/:id/details', verifyToken, (req, res) => {
     res.json(results);
   });
 });
+// GET /orders/:id/details
+router.get('/foods/sales', verifyToken, (req, res) => {
+  const query = `
+    SELECT 
+      f.name AS food_name,
+      COALESCE(SUM(oi.quantity), 0) AS total_sold
+    FROM 
+      food f
+    LEFT JOIN 
+      order_items oi ON f.id = oi.food_id
+    GROUP BY 
+      f.id
+    ORDER BY 
+      total_sold DESC
+  `;
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching order items' });
+    res.json(results);
+  });
+});
 
 export default router;

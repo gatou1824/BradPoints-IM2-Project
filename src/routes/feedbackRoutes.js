@@ -5,6 +5,19 @@ import db from '../db.js';
 
 const router = express.Router();
 
+router.get('/', verifyToken, (req, res) => {
+  const query = `
+SELECT f.rating, f.message, f.created_at, u.username AS customer_name FROM feedback f JOIN users u ON f.user_id = u.id ORDER BY f.created_at DESC;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching feedbacks' });
+
+    res.json({ feedbacks: results });
+  });
+});
+
+
 router.post('/sendFeedback', verifyToken, (req, res) => {
   const { message, order_id, rating } = req.body;
   const user_id = req.user.id;
@@ -58,7 +71,54 @@ router.post('/dismissFeedback/:orderId', verifyToken, (req, res) => {
   });
 });
 
+// GET /feedback/recent/count
+router.get('/recent/count', verifyToken, (req, res) => {
+  const query = `SELECT COUNT(*) AS count FROM feedback WHERE created_at >= NOW() - INTERVAL 24 HOUR`;
 
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error('Error fetching recent feedback count:', err);
+      return res.sendStatus(500);
+    }
+
+    res.json({ count: result[0].count });
+  });
+});
+
+router.get('/star-distribution', verifyToken,(req, res) => {
+  const query = `
+    SELECT rating, COUNT(*) AS count
+    FROM feedback
+    WHERE rating IS NOT NULL
+    GROUP BY rating
+    ORDER BY rating ASC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching data' });
+
+    // Initialize array of 5 zeroes (1–5 stars)
+    const starCounts = [0, 0, 0, 0, 0];
+
+    results.forEach(row => {
+      const rating = row.rating; // should be 1–5
+      const count = row.count;
+      starCounts[rating - 1] = count; // store at index 0–4
+    });
+
+    res.json({ data: starCounts });
+  });
+});
+
+router.get('/average', verifyToken, (req, res) => {
+  const query = `SELECT AVG(rating) AS average_rating FROM feedback`;
+
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error fetching data' });
+    const avg = parseFloat(results[0].average_rating).toFixed(2)
+    res.json({ average: avg });
+  });
+});
 
 
 export default router;

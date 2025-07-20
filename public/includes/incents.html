@@ -10,10 +10,10 @@
     <body> 
                     <div style="display: flex; justify-content: center; margin-top: 20px;">
                         <div class="tab-buttons">
-                            <a href="adminDashboard.html"><button>Home</button></a>
-                            <a href="users.html"><button>Users</button></a>
-                            <a href="feedbacks.html"><button>Feedbacks</button></a>
-                            <a href="rewards.html"><button class="active">Incentives</button></a>
+                            <a href="../adminDashboard.html"><button>Home</button></a>
+                            <a href="../users.html"><button>Users</button></a>
+                            <a href="../feedbacks.html"><button>Feedbacks</button></a>
+                            <a href="../rewards.html"><button class="active">Incentives</button></a>
                         </div>
                     </div>
 
@@ -26,17 +26,6 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <input type="text" class="form-control" placeholder="Search rewards...">
-                            </div>
-                        <div class="col-md-3">
-                            <select class="form-control">
-                                <option selected>Filter</option>
-                                <option>Points Required</option>
-                                <option>Date Added</option>
-                                <option># of Redemptions</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3 text-right">
-                            <button class="btn btn-outline-secondary">Apply Filters</button>
                         </div>
                     </div>
 
@@ -45,52 +34,14 @@
                             <thead class="thead-red">
                             <tr>
                                 <th>#</th>
+                                <th>Food Name</th>
                                 <th>Reward Name</th>
-                                <th>Reward Image</th>
                                 <th>Points Required</th>
-                                <th>Date Added</th>
                                 <th># of Redemptions</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                            <tbody class="text-center">
-                                <tr>
-                                    <td>1</td>
-                                    <td>Free Cheeseburger</td>
-                                    <td><img src="images/burger.jpg" class="img-fluid" style="max-width: 100px; height: auto;"></td>
-                                    <td>18</td>
-                                    <td>2025-08-01</td>
-                                    <td>457</td>
-                                    <td>
-                                    <button class="btn btn-sm btn-primary edit-btn">Edit</button>
-                                    <button class="btn btn-sm btn-danger delete-btn">Delete</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>Free Siomai</td>
-                                    <td><img src="images/siomai.png" class="img-fluid" style="max-width: 100px; height: auto;"></td>
-                                    <td>6</td>
-                                    <td>2025-07-20</td>
-                                    <td>457</td>
-                                    <td>
-                                    <button class="btn btn-sm btn-primary edit-btn">Edit</button>
-                                    <button class="btn btn-sm btn-danger delete-btn">Delete</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>3</td>
-                                    <td>Free Steamed Rice</td>
-                                    <td><img src="images/steamrice.png" class="img-fluid" style="max-width: 100px; height: auto;"></td>
-                                    <td>15</td>
-                                    <td>2025-06-01</td>
-                                    <td>457</td>
-                                    <td>
-                                    <button class="btn btn-sm btn-primary edit-btn">Edit</button>
-                                    <button class="btn btn-sm btn-danger delete-btn">Delete</button>
-                                    </td>
-                                </tr>
-                            </tbody>
+                            <tbody id="rewardsTableBody" class="text-center"></tbody>
                         </table>
                     </div>
 
@@ -174,27 +125,6 @@
                 </div>
             </div>
 
-            <!-- delete reward modal -->
-            <div class="modal fade" id="deleteRewardModal" tabindex="-1" role="dialog">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">Confirm Delete</h5>
-                        <button type="button" class="close text-white" data-dismiss="modal">
-                        <span>&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <p id="deleteRewardText">Are you sure you want to delete this reward?</p>
-                        <input type="hidden" id="deleteRewardId">
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
-                    </div>
-                    </div>
-                </div>
-            </div>
     </body>
 
     <script>

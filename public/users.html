@@ -215,6 +215,13 @@
       .then(html => {
         document.getElementById('cont').innerHTML = html;
         document.body.style.visibility = 'visible';
+        
+        // Add search bars after content loads
+        setTimeout(() => {
+          addSearchBar('customerSection', 'customerSearch', 'Search customers by ID, username, or email...', filterCustomers);
+          addSearchBar('staffSection', 'staffSearch', 'Search staff by ID, username, or email...', filterStaff);
+          addSearchBar('adminSection', 'adminSearch', 'Search admins by ID, username, or email...', filterAdmins);
+        }, 100);
       });
 
     // Logout function
@@ -271,7 +278,7 @@
       showCustomer = !showCustomer;
 
       // Load all admin rows if showAll is true, otherwise load default (3)
-      loadAdmin(showCustomer ? null : 3);
+      loadCustomers(showCustomer ? null : 3);
 
       if (showCustomer) {
           document.getElementById('adminSection').style.display = 'none';
@@ -281,6 +288,107 @@
           document.getElementById('staffSection').style.display = 'block';
           document.getElementById('adminSection').style.display = 'block'; // ← add this
       }
+
+      const btn = document.getElementById('allCustomers');
+      if (btn) {
+          btn.textContent = showCustomer ? 'Show Less' : 'See All';
+      }
+
+    }
+
+    // Add search bar function
+    function addSearchBar(sectionId, searchId, placeholder, filterFunction) {
+      const section = document.getElementById(sectionId);
+      const existingSearch = document.getElementById(searchId);
+      
+      if (!existingSearch) {
+        const searchContainer = document.createElement('div');
+        searchContainer.className = 'search-container';
+        searchContainer.style.cssText = 'margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px;';
+        
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.id = searchId;
+        searchInput.className = 'form-control';
+        searchInput.placeholder = placeholder;
+        searchInput.style.cssText = 'width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;';
+        
+        searchInput.addEventListener('input', (e) => {
+          filterFunction(e.target.value);
+        });
+        
+        searchContainer.appendChild(searchInput);
+        
+        // Insert search bar before the table
+        const table = section.querySelector('table');
+        if (table) {
+          section.insertBefore(searchContainer, table);
+        } else {
+          section.appendChild(searchContainer);
+        }
+      }
+    }
+
+    // Remove search bar function
+    function removeSearchBar(sectionId, searchId) {
+      const searchBar = document.getElementById(searchId);
+      if (searchBar) {
+        searchBar.parentElement.remove();
+      }
+    }
+
+    // Filter customers function
+    function filterCustomers(searchTerm) {
+      const tbody = document.getElementById('customerList');
+      const rows = tbody.querySelectorAll('tr');
+      
+      rows.forEach(row => {
+        const id = row.cells[0].textContent.toLowerCase();
+        const username = row.cells[1].textContent.toLowerCase();
+        const email = row.cells[2].textContent.toLowerCase();
+        
+        const matches = id.includes(searchTerm.toLowerCase()) || 
+                       username.includes(searchTerm.toLowerCase()) || 
+                       email.includes(searchTerm.toLowerCase());
+        
+        row.style.display = matches ? '' : 'none';
+      });
+    }
+
+    // Filter staff function
+    function filterStaff(searchTerm) {
+      const tbody = document.getElementById('staffList');
+      const rows = tbody.querySelectorAll('tr');
+      
+      rows.forEach(row => {
+        const id = row.cells[0].textContent.toLowerCase();
+        const username = row.cells[1].textContent.toLowerCase();
+        const email = row.cells[2].textContent.toLowerCase();
+        
+        const matches = id.includes(searchTerm.toLowerCase()) || 
+                       username.includes(searchTerm.toLowerCase()) || 
+                       email.includes(searchTerm.toLowerCase());
+        
+        row.style.display = matches ? '' : 'none';
+      });
+    }
+
+    // Filter admins function
+    function filterAdmins(searchTerm) {
+      const tbody = document.getElementById('adminList');
+      const rows = tbody.querySelectorAll('tr');
+      
+      rows.forEach(row => {
+        const id = row.cells[0].textContent.toLowerCase();
+        const username = row.cells[1].textContent.toLowerCase();
+        const email = row.cells[2].textContent.toLowerCase();
+        
+        const matches = id.includes(searchTerm.toLowerCase()) || 
+                       username.includes(searchTerm.toLowerCase()) || 
+                       email.includes(searchTerm.toLowerCase());
+        
+        row.style.display = matches ? '' : 'none';
+      });
     }
 
 const loadCustomers = (limit) => {
@@ -393,6 +501,8 @@ const loadCustomers = (limit) => {
         tr.querySelector('.cancel-btn').style.display = 'none';
       });
 
+      //handle delete
+
       tr.querySelector('.delete-btn').addEventListener('click', () => {
       if (confirm(`Are you sure you want to delete ${user.username}?`)) {
         fetch(`/customers/delete/${user.id}`, {
@@ -434,6 +544,11 @@ const loadCustomers = (limit) => {
           document.getElementById('customerSection').style.display = 'block';
           document.getElementById('staffSection').style.display = 'block';
           document.getElementById('adminSection').style.display = 'block'; // ← add this
+      }
+      
+      const btn = document.getElementById('allStaff');
+      if (btn) {
+          btn.textContent = showStaff ? 'Show Less' : 'See All';
       }
     }
 

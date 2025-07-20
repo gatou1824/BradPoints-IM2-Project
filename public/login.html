@@ -7,6 +7,38 @@
     <link rel="icon" type="image/x-icon" href="images/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="login-signup-styles.css">
+    <style>
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 14px;
+            display: none;
+            text-align: left;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .input-box.error {
+            border-color: #d32f2f;
+            background-color: #fff8f8;
+        }
+        
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
     <div class="left-panel">
@@ -20,15 +52,19 @@
             <a href="index.html" class="logo"><img src="images/logo.jpg" alt="Logo"></a>
             <h2>Welcome to Braddex</h2>
             <p>Please sign in to access your portal</p>
+            
+            <!-- Error message container -->
+            <div id="errorMessage" class="error-message"></div>
+            
             <input type="text" class="input-box" id="loginEmail" placeholder="Username or Email">
             <input type="password" class="input-box" id="loginPassword" placeholder="Password">
-            <button class="button primary" type="submit">Login</button>
+            <button class="button primary" type="submit" id="loginButton">Login</button>
             <div class="signup">Don't have an account yet? <a href="signup.html">Sign up</a></div>
         </form>
     </div>
 
     <script>
-                // Slideshow logic
+        // Slideshow logic
         const images = [
             "images/food1.png",
             "images/food2.png",
@@ -43,41 +79,122 @@
             slideshow.src = images[index];
         }, 3000); 
 
-
         // Login redirect logic
-    const apiBase = 'http://localhost:51540'; // Change if your server uses a different port
+        const apiBase = 'http://localhost:51540'; // Change if your server uses a different port
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
+        // Function to show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            
+            // Add error styling to input fields
+            document.getElementById('loginEmail').classList.add('error');
+            document.getElementById('loginPassword').classList.add('error');
+            
+            // Hide error after 5 seconds
+            setTimeout(() => {
+                hideError();
+            }, 5000);
+        }
 
-      const res = await fetch(`${apiBase}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+        // Function to hide error message
+        function hideError() {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.classList.remove('show');
+            
+            // Remove error styling from input fields
+            document.getElementById('loginEmail').classList.remove('error');
+            document.getElementById('loginPassword').classList.remove('error');
+        }
 
-      const data = await res.json();
-        if (data.token) {
-            localStorage.setItem('token', data.token); // Save the token
-            console.log(data.user.role)
-
-            if(data.user.role === 'customer') {
-              window.location.href = '/dashboard/customer'
-            } else if(data.user.role === 'staff') {
-              window.location.href = '/dashboard/staff'
-            } else if(data.user.role === 'admin') {
-              window.location.href = '/dashboard/admin'
+        // Function to show loading state
+        function setLoading(loading) {
+            const button = document.getElementById('loginButton');
+            const form = document.getElementById('loginForm');
+            
+            if (loading) {
+                button.textContent = 'Logging in...';
+                button.disabled = true;
+                form.classList.add('loading');
             } else {
-              window.location.href = '/';       // Redirect to dashboard
+                button.textContent = 'Login';
+                button.disabled = false;
+                form.classList.remove('loading');
+            }
+        }
+
+        // Clear error when user starts typing
+        document.getElementById('loginEmail').addEventListener('input', hideError);
+        document.getElementById('loginPassword').addEventListener('input', hideError);
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Hide any previous error messages
+            hideError();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            // Basic validation
+            if (!email || !password) {
+                showError('Please enter both email and password.');
+                return;
             }
 
-        } else {
-            document.getElementById('loginResult').textContent = data.message || 'Login failed';
-        }
-    });
+            // Show loading state
+            setLoading(true);
 
+            try {
+                const res = await fetch(`${apiBase}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+                
+                if (data.token) {
+                    localStorage.setItem('token', data.token); // Save the token
+                    console.log(data.user.role);
+
+                    if(data.user.role === 'customer') {
+                        window.location.href = '/dashboard/customer';
+                    } else if(data.user.role === 'staff') {
+                        window.location.href = '/dashboard/staff';
+                    } else if(data.user.role === 'admin') {
+                        window.location.href = '/dashboard/admin';
+                    } else {
+                        window.location.href = '/';       // Redirect to dashboard
+                    }
+                } else {
+                    // Handle different types of errors
+                    if (data.message) {
+                        if (data.message.toLowerCase().includes('not found') || 
+                            data.message.toLowerCase().includes('invalid') ||
+                            data.message.toLowerCase().includes('incorrect')) {
+                            showError('Invalid email or password. Please check your credentials and try again.');
+                        } else if (data.message.toLowerCase().includes('not verified') ||
+                                   data.message.toLowerCase().includes('unverified')) {
+                            showError('Your account is not verified. Please check your email for verification instructions or contact support.');
+                        } else if (data.message.toLowerCase().includes('disabled') ||
+                                   data.message.toLowerCase().includes('suspended')) {
+                            showError('Your account has been disabled. Please contact support for assistance.');
+                        } else {
+                            showError(data.message);
+                        }
+                    } else {
+                        showError('Login failed. Please try again.');
+                    }
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Network error. Please check your connection and try again.');
+            } finally {
+                setLoading(false);
+            }
+        });
     </script>
 </body>
 </html>

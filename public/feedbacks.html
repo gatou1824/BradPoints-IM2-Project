@@ -142,6 +142,7 @@
       margin-left: auto;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     // Token check and redirect
     const token = localStorage.getItem('token');
@@ -245,6 +246,7 @@
         window.location.href = '/';
       });
     }
+
   </script>
 </head>
 <body>
@@ -260,5 +262,185 @@
   </header>
   <div id="toggle-profile"></div>
   <main id="cont" style="padding: 0px 20px; max-width: 1210px; margin: 0 auto;"></main>
+
+  <script>
+    
+
+  fetch('/feedback/star-distribution', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(({ data }) => {
+    const ctx = document.getElementById('starChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['1 Star', '2 Stars', '3 Stars', '4 Stars', '5 Stars'],
+        datasets: [{
+          label: 'Feedback Count',
+          data: data, // e.g. [2, 5, 8, 12, 20]
+          backgroundColor: [
+            '#ef4444', '#f97316', '#facc15', '#4ade80', '#22c55e'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: 'Feedback Star Rating Distribution'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            stepSize: 1
+          }
+        }
+      }
+    });
+  });
+
+  fetch('/orders/foods/sales', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const ctx = document.getElementById('foodChart').getContext('2d');
+    console.log(data);
+
+    const labels = data.map(item => item.food_name);
+    const salesData = data.map(item => parseInt(item.total_sold));
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Total Sold',
+          data: salesData,
+          backgroundColor: '#4ade80'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: 'Foods Total Times Sold'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
+      }
+    });
+  });
+
+  fetch('/rewards/redemptions', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const tbody = document.getElementById('rewards-table-body');
+    tbody.innerHTML = '';
+    data.forEach((reward, index) => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${reward.reward_name}</td>
+          <td>${reward.required_points.toLocaleString()}</td>
+          <td>${reward.times_redeemed}</td>
+        </tr>
+      `;
+    });
+  });
+
+  fetch('/feedback/average', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const ave = document.getElementById('average');
+    ave.innerHTML = ` 🌟${data.average}`;
+  });
+
+fetch('/feedback', {
+  headers: { Authorization: `Bearer ${token}` }
+})
+  .then(res => res.json())
+  .then(data => {
+    const list = document.getElementById('feedback-list');
+    list.innerHTML = ''; // clear previous if any
+
+    data.feedbacks.forEach(fb => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item';
+
+      // Format date nicely
+      const date = new Date(fb.created_at).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric'
+      });
+
+      li.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+          <small class="text-muted"><strong>${fb.customer_name}</strong>⭐ ${fb.rating} </small>
+          <small class="text-muted">${date}</small>
+        </div>
+        <div class="mt-1 mb-1" style="font-size: 1.1rem;">
+          ${fb.message || '<em>No comment provided.</em>'}
+        </div>
+      `;
+      list.appendChild(li);
+    });
+  });
+
+
+
+
+//   async function loadChart() {
+//   const res = await fetch('/orders/foods/sales');
+//   const data = await res.json();
+
+//   console.log(data)
+
+//   const labels = data.map(item => item.food_name);
+//   const values = data.map(item => item.total_sold);
+
+//   new Chart(document.getElementById('foodChart'), {
+//     type: 'bar',
+//     data: {
+//       labels: labels,
+//       datasets: [{
+//         label: 'Total Times Sold',
+//         data: values,
+//         backgroundColor: '#60a5fa' // blue
+//       }]
+//     },
+//     options: {
+//       indexAxis: 'y', // horizontal bars (optional)
+//       scales: {
+//         x: {
+//           beginAtZero: true
+//         }
+//       }
+//     }
+//   });
+// }
+
+// loadChart();
+  </script>
 </body>
 </html>

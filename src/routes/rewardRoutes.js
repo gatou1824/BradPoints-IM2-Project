@@ -41,6 +41,7 @@ const getRewardsProgress = `
     ORDER BY rc2.created_at DESC
     LIMIT 1
   )
+  WHERE r.is_deleted = 0
 `;
 
 db.query(getRewardsProgress, [userId, userId], (err, results) => {
@@ -247,6 +248,76 @@ router.get('/validate/:code', (req, res) => {
         name: reward.name
       }
     });
+  });
+});
+
+router.get('/redemptions', verifyToken,(req, res) => {
+  const query = `
+SELECT 
+  r.id,
+  r.food_id,
+  f.name AS food_name,
+  r.name AS reward_name,
+  r.required_points,
+  COUNT(rc.id) AS times_redeemed
+  FROM rewards r
+  LEFT JOIN food f ON r.food_id = f.id
+  LEFT JOIN reward_claims rc ON rc.reward_id = r.id AND rc.redeemed = 1
+  WHERE r.is_deleted = 0
+  GROUP BY r.id, r.food_id, f.name, r.name, r.required_points
+  ORDER BY times_redeemed DESC;
+  `;
+    db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ message: 'DB error' });
+    if (results.length === 0) return res.status(404).json({ message: 'Invalid or already claimed code' });
+
+    return res.json(results);
+  });
+});
+
+router.put('/update/:id', verifyToken,(req, res) => {
+  const {food_id, reward_name, required_points } = req.body
+  const reward_id = req.params.id;
+
+  try {
+    let updateQuery = 'UPDATE rewards SET food_id = ?, name = ?, required_points = ?'
+
+    const values = [food_id, reward_name, required_points];
+
+    updateQuery += ' WHERE id = ?'
+    values.push(reward_id)
+
+    db.query(updateQuery, values, (err, result) => {
+      if (err) {
+        console.error(err.message);
+        return res.sendStatus(500);
+      }
+
+      res.json({ food_id, reward_name, required_points });
+    })
+  } catch (err) {
+    console.error('Password hash error:', err);
+    res.sendStatus(500);
+  }
+});
+
+
+router.put('/delete/:id', verifyToken, (req, res) => {
+  const rewardId = req.params.id;
+
+  const softDeleteQuery = 'UPDATE rewards SET is_deleted = 1 WHERE id = ?';
+
+  db.query(softDeleteQuery, [rewardId], (err, result) => {
+    if (err) {
+      console.error(err.message);
+      return res.sendStatus(500);
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'User not found or already deleted' });
+    }
+
+    res.json({ message: 'User soft deleted successfully' });
   });
 });
 
