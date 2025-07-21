@@ -3,6 +3,7 @@ import db from '../db.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
 router.post('/confirm', verifyToken, (req, res) => {
   const { customer_id, food_ids, reward_code } = req.body;
   const staff_id = req.user.id;
