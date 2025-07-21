@@ -243,6 +243,140 @@
   color: gold;
 }
 
+.notification-card {
+  display: flex;
+  align-items: flex-start;
+  background: #f8fafc;
+  border-left: 5px solid #fbbf24; /* gold */
+  border-radius: 10px;
+  margin-bottom: 16px;
+  padding: 16px 20px 16px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  transition: box-shadow 0.2s;
+  position: relative;
+}
+
+.notification-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  background: #fffbe7;
+}
+
+.notification-icon {
+  font-size: 28px;
+  margin-right: 16px;
+  color: #f59e42;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-title {
+  font-weight: bold;
+  color: #b91c1c;
+  margin-bottom: 2px;
+}
+
+.notification-message {
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.reward-card {
+  display: flex;
+  align-items: flex-start;
+  background: #f8fafc;
+  border-left: 5px solid #38bdf8; /* sky blue */
+  border-radius: 10px;
+  margin-bottom: 18px;
+  padding: 18px 22px 18px 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  transition: box-shadow 0.2s, background 0.2s;
+  position: relative;
+}
+
+.reward-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  background: #e0f2fe;
+}
+
+.reward-icon {
+  font-size: 32px;
+  margin-right: 18px;
+  color: #0ea5e9;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.reward-info {
+  flex: 1;
+}
+
+.reward-title {
+  font-weight: bold;
+  color: #0ea5e9;
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.reward-desc {
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.reward-progress {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.reward-actions {
+  display: flex;
+  align-items: center;
+  margin-left: 24px;
+  min-width: 140px; /* Reserve space for button or message */
+  max-width: 180px;
+  justify-content: flex-end;
+}
+
+.reward-actions button {
+  padding: 8px 18px;
+  background-color: #0ea5e9;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: background 0.2s;
+}
+
+.reward-actions button:disabled,
+.reward-actions .disabled {
+  background: #e5e7eb;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.reward-actions p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.reward-actions:empty {
+  min-width: 140px;
+  max-width: 180px;
+  /* No border, no background */
+}
+
   </style>
   <script>
     const token = localStorage.getItem('token');
@@ -266,39 +400,50 @@ data.forEach(r => {
   const div = document.createElement('div');
   div.className = 'reward-card';
 
+  // Icon
+  const icon = document.createElement('div');
+  icon.className = 'reward-icon';
+  icon.textContent = '🎁';
+
+  // Info
   const info = document.createElement('div');
   info.className = 'reward-info';
 
+  // Title and description
+  info.innerHTML = `<div class="reward-title">${r.reward_name}</div>`;
+  info.innerHTML += `<div class="reward-desc">${r.progress} / ${r.required_points} points</div>`;
+
+  // Progress or code
+  if (r.redeemed) {
+    info.innerHTML += `<div class="reward-progress" style="color:green;">✅ Reward already used</div>`;
+  } else if (r.code) {
+    info.innerHTML += `
+      <div class="reward-progress"><span style="color:#0ea5e9;">Code:</span> <b>${r.code}</b></div>
+      <div class="reward-progress"><small>This code expires in 24 hours. Show this to the cashier upon ordering.</small></div>
+    `;
+  } else if (r.claimed_recently) {
+    info.innerHTML += `<div class="reward-progress" style="color:green;">Already claimed</div>`;
+  }
+
+  // Actions
   const actions = document.createElement('div');
   actions.className = 'reward-actions';
 
-  // === UI display logic ===
-
-  info.innerHTML = `<strong>${r.reward_name}</strong><br>`;
-
-  if (r.redeemed) {
-    info.innerHTML += `<span style="color: green;">✅ Reward already used</span>`;
-  } else if (r.code) {
-    info.innerHTML += `
-      <span>Code: ${r.code}</span><br>
-      <small>This code expires in 24 hours. Show this to the cashier upon ordering.</small>
-    `;
-  } else {
-    info.innerHTML += `<span>Progress: ${r.progress} / ${r.required_points}</span><br>`;
-
-    if (r.claimed_recently) {
-      actions.innerHTML = `<p style="color: green;">Already claimed</p>`;
-    } else if (r.can_claim) {
+  if (!r.redeemed && !r.code && !r.claimed_recently) {
+    if (r.can_claim) {
       const btn = document.createElement('button');
       btn.textContent = 'Redeem';
-      btn.style = btnStyle();
       btn.onclick = () => claimReward(r.reward_id, btn);
       actions.appendChild(btn);
     } else {
-      actions.innerHTML = `<p style="color: gray;">Not enough points yet</p>`;
+      const p = document.createElement('p');
+      p.className = 'disabled';
+      p.textContent = 'Not enough points yet';
+      actions.appendChild(p);
     }
   }
 
+  div.appendChild(icon);
   div.appendChild(info);
   div.appendChild(actions);
   rewardsContainer.appendChild(div);
@@ -449,20 +594,33 @@ function claimReward(id, btn) {
 
 // Tabs
 function showTab(tabId) {
-  ['rewards', 'notifications', 'history', 'feedback'].forEach(id => {
-    const el = document.getElementById(id);
-    const tab = document.getElementById(`tab-${id}`);
-    if (el) el.style.display = (id === tabId) ? 'block' : 'none';
-    if (tab) tab.classList.toggle('active', id === tabId);
-  });
-
-  if (tabId === 'history') {
-    loadHistory();
-  }
+  // Reload the page and pass the tabId as a query parameter
+  window.location.search = `?tab=${tabId}`;
 }
 
-
-window.onload = () => showTab('rewards');
+// On page load, check for ?tab= in the URL and show that tab
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  if (tab && ['rewards', 'notifications', 'history', 'feedback'].includes(tab)) {
+    ['rewards', 'notifications', 'history', 'feedback'].forEach(id => {
+      const el = document.getElementById(id);
+      const tabBtn = document.getElementById(`tab-${id}`);
+      if (el) el.style.display = (id === tab) ? 'block' : 'none';
+      if (tabBtn) tabBtn.classList.toggle('active', id === tab);
+    });
+    if (tab === 'history') loadHistory();
+    if (tab === 'notifications') loadNotifications();
+  } else {
+    // Default to rewards
+    ['rewards', 'notifications', 'history', 'feedback'].forEach(id => {
+      const el = document.getElementById(id);
+      const tabBtn = document.getElementById(`tab-${id}`);
+      if (el) el.style.display = (id === 'rewards') ? 'block' : 'none';
+      if (tabBtn) tabBtn.classList.toggle('active', id === 'rewards');
+    });
+  }
+});
 
     function logout() {
       localStorage.removeItem('token');
@@ -675,25 +833,23 @@ function loadHistory() {
 
     data.forEach(h => {
       const div = document.createElement('div');
-      div.className = 'reward-card';
-
-      const info = document.createElement('div');
-      info.className = 'reward-info';
-
-      if (h.type === 'Reward') {
-        info.innerHTML = `
-          <strong>🎁 ${h.item}</strong><br>
-          <span>Code: ${h.code}</span><br>
-          <small>Claimed at: ${new Date(h.date).toLocaleString()}</small><br>
-        `;
-      } else {
-        info.innerHTML = `
-          <strong>🛒 ${h.item}</strong><br>
-          <small>Ordered at: ${new Date(h.date).toLocaleString()}</small>
-        `;
-      }
-
-      div.appendChild(info);
+      div.className = 'notification-card';
+      let icon = h.type === 'Reward' ? '🎁' : '🛒';
+      let title = h.type === 'Reward' ? 'Reward Redeemed' : 'Order Placed';
+      let message = h.type === 'Reward'
+        ? `<strong>${h.item}</strong><br><span>Code: ${h.code}</span>`
+        : `<strong>${h.item}</strong>`;
+      let time = h.type === 'Reward'
+        ? `Claimed at: ${new Date(h.date).toLocaleString()}`
+        : `Ordered at: ${new Date(h.date).toLocaleString()}`;
+      div.innerHTML = `
+        <div class="notification-icon">${icon}</div>
+        <div class="notification-content">
+          <div class="notification-title">${title}</div>
+          <div class="notification-message">${message}</div>
+          <div class="notification-time">${time}</div>
+        </div>
+      `;
       historyContainer.appendChild(div);
     });
   })
@@ -702,6 +858,39 @@ function loadHistory() {
     document.getElementById('history').innerHTML = '<p style="color:red;">Unable to fetch history.</p>';
   });
 }
+
+function loadNotifications() {
+  fetch('/rewards/notifications', {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const notificationsContainer = document.getElementById('notifications');
+    notificationsContainer.innerHTML = '';
+    if (data.length === 0) {
+      notificationsContainer.innerHTML = '<p style="text-align:center;">No notifications yet.</p>';
+      return;
+    }
+    data.forEach(n => {
+      const div = document.createElement('div');
+      div.className = 'notification-card';
+      div.innerHTML = `
+        <div class="notification-icon">🔔</div>
+        <div class="notification-content">
+          <div class="notification-title">Reward Update</div>
+          <div class="notification-message">${n.message}</div>
+          <div class="notification-time">${new Date(n.created_at).toLocaleString()}</div>
+        </div>
+      `;
+      notificationsContainer.appendChild(div);
+    });
+  })
+  .catch(err => {
+    document.getElementById('notifications').innerHTML = '<p style="color:red;">Unable to fetch notifications.</p>';
+  });
+}
+
+  loadNotifications();
 
 function cancelFeedback() {
   document.getElementById('send-feedback').style.display = 'none';

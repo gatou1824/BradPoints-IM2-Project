@@ -258,11 +258,19 @@
     });
 
     fetch('/admin/rewards')  
-        .then(res => res.text())
-        .then(html => {
-            document.getElementById('cont').innerHTML = html;
-            document.body.style.visibility = 'visible';
-        });
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('cont').innerHTML = html;
+        document.body.style.visibility = 'visible';
+
+        // Wait for the content to be loaded and then add search bar
+        setTimeout(() => {
+          const rewardsSection = document.getElementById('rewardsSection');
+          if (rewardsSection) {
+            addSearchBar('rewardsSection', 'rewardsSearch', 'Search rewards by ID, name, or reward name...', filterRewards);
+          }
+        }, 100);
+    });
 
         function logout() {
       localStorage.removeItem('token');
@@ -381,6 +389,64 @@
       });
     }
 
+    
+function addSearchBar(sectionId, searchId, placeholder, filterFunction) {
+      const section = document.getElementById(sectionId);
+      const existingSearch = document.getElementById(searchId);
+      
+      if (!existingSearch) {
+        const searchContainer = document.createElement('div');
+        searchContainer.className = 'search-container';
+        searchContainer.style.cssText = 'margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px;';
+        
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.id = searchId;
+        searchInput.className = 'form-control';
+        searchInput.placeholder = placeholder;
+        searchInput.style.cssText = 'width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;';
+        
+        searchInput.addEventListener('input', (e) => {
+          filterFunction(e.target.value);
+        });
+        
+        searchContainer.appendChild(searchInput);
+        
+        // Insert search bar before the table
+        const table = section.querySelector('table');
+        if (table) {
+          section.insertBefore(searchContainer, table);
+        } else {
+          section.appendChild(searchContainer);
+        }
+      }
+    }
+
+    function removeSearchBar(sectionId, searchId) {
+      const searchBar = document.getElementById(searchId);
+      if (searchBar) {
+        searchBar.parentElement.remove();
+      }
+    }
+
+    // Filter customers function
+    function filterRewards(searchTerm) {
+      const tbody = document.getElementById('rewardsTableBody');
+      const rows = tbody.querySelectorAll('tr');
+      
+      rows.forEach(row => {
+        const id = row.cells[0].textContent.toLowerCase();
+        const foodName = row.cells[1].textContent.toLowerCase();
+        const rewardName = row.cells[2].textContent.toLowerCase();
+        
+        const matches = id.includes(searchTerm.toLowerCase()) || 
+                       foodName.includes(searchTerm.toLowerCase()) ||   
+                       rewardName.includes(searchTerm.toLowerCase())
+        
+        row.style.display = matches ? '' : 'none';
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
     
       fetch('/rewards/redemptions', {
@@ -480,10 +546,15 @@
       if (confirm(`Are you sure you want to delete ${reward.reward_name}?`)) {
         fetch(`/rewards/delete/${reward.id}`, {
           method: 'PUT',
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 'Content-Type': 'application/json',Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            reward_name: reward.reward_name
+          })
         })
         .then(res => {
           if (!res.ok) throw new Error('Delete failed');
+
+          console.log(reward.reward_name)
           tr.remove(); // Remove row from table
         })
         .catch(err => {
@@ -494,11 +565,76 @@
 
       tbody.appendChild(tr);
       });
+      
+      // Add search bar after table is populated
     })
     .catch(error => {
       console.error('Error loading rewards:', error);
     });
 });
+
+function addReward() {
+  const tbody = document.getElementById('rewardsTableBody');
+  console.log('clicked add rewards')
+
+  // Prevent multiple unsaved rows
+  if (document.getElementById('newRewardRow')) return;
+
+  const newRow = document.createElement('tr');
+  newRow.id = 'newRewardRow';
+  newRow.innerHTML = `
+    <td><input type="text" class="form-control" placeholder="Food ID" id="newFoodId" /></td>
+    <td>Food Name</td>
+    <td><input type="text" class="form-control" placeholder="Reward Name" id="newRewardName" /></td>
+    <td><input type="number" class="form-control" placeholder="Points" id="newPoints" /></td>
+    <td>0</td>
+    <td>
+      <button class="btn btn-success btn-sm" id="saveRewardBtn">Save</button>
+      <button class="btn btn-secondary btn-sm" id="cancelRewardBtn">Cancel</button>
+    </td>
+  `;
+  tbody.prepend(newRow);
+
+
+  // Cancel button functionality
+  document.getElementById('cancelRewardBtn').addEventListener('click', () => {
+    newRow.remove();
+  });
+
+  // Save button functionality
+  document.getElementById('saveRewardBtn').addEventListener('click', () => {
+    const foodId = document.getElementById('newFoodId').value.trim();
+    const rewardName = document.getElementById('newRewardName').value.trim();
+    const points = document.getElementById('newPoints').value.trim();
+
+    if (!foodId || !rewardName || !points) {
+      alert('Please fill out all fields.');
+      return;
+    }
+
+    // Example fetch (adjust URL & method to match your backend)
+    fetch('/rewards/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json',  Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        food_id: foodId,
+        reward_name: rewardName,
+        required_points: points
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert('Reward added!');
+      newRow.remove();
+      // Optionally, reload or re-fetch rewards
+      window.location.reload();
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Error saving reward.');
+    });
+  });
+};
 
   </script>
 </body>

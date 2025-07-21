@@ -282,6 +282,13 @@ router.put('/update/:id', verifyToken,(req, res) => {
   try {
     let updateQuery = 'UPDATE rewards SET food_id = ?, name = ?, required_points = ?'
 
+    // After successful reward creation
+    const notificationQuery = `
+    INSERT INTO notifications (user_id, message)
+    VALUES (NULL, ?)
+    `;
+    const message = `A reward "${reward_name}" has been updated!`;
+
     const values = [food_id, reward_name, required_points];
 
     updateQuery += ' WHERE id = ?'
@@ -292,6 +299,8 @@ router.put('/update/:id', verifyToken,(req, res) => {
         console.error(err.message);
         return res.sendStatus(500);
       }
+
+      db.query(notificationQuery, [message]);
 
       res.json({ food_id, reward_name, required_points });
     })
@@ -304,8 +313,16 @@ router.put('/update/:id', verifyToken,(req, res) => {
 
 router.put('/delete/:id', verifyToken, (req, res) => {
   const rewardId = req.params.id;
+  const reward_name = req.body.reward_name;
 
   const softDeleteQuery = 'UPDATE rewards SET is_deleted = 1 WHERE id = ?';
+
+  const notificationQuery = `
+    INSERT INTO notifications (user_id, message)
+    VALUES (NULL, ?)
+  `;
+
+  const message = `A reward "${reward_name}" has been deleted!`;
 
   db.query(softDeleteQuery, [rewardId], (err, result) => {
     if (err) {
@@ -317,7 +334,46 @@ router.put('/delete/:id', verifyToken, (req, res) => {
       return res.status(404).json({ message: 'User not found or already deleted' });
     }
 
+    db.query(notificationQuery, [message]);
+
     res.json({ message: 'User soft deleted successfully' });
+  });
+});
+
+router.post('/create', verifyToken, (req, res) => {
+  const { food_id, reward_name, required_points } = req.body;
+
+  const insertQuery = `
+    INSERT INTO rewards (food_id, name, required_points)
+    VALUES (?, ?, ?)
+  `;
+
+  // After successful reward creation
+  const notificationQuery = `
+  INSERT INTO notifications (user_id, message)
+  VALUES (NULL, ?)
+  `;
+  const message = `A new reward "${reward_name}" has been added!`;
+
+  db.query(insertQuery, [food_id, reward_name, required_points], (err, result) => {
+    if (err) return res.status(500).json({ message: 'Insert failed', error: err.message });
+    res.status(201).json({ message: 'Reward added', id: result.insertId });
+
+    db.query(notificationQuery, [message]);
+    });
+});
+
+router.get('/notifications', verifyToken, (req, res) => {
+  const query = `
+    SELECT id, message, created_at, is_read
+    FROM notifications
+    WHERE user_id IS NULL OR user_id = ?
+    ORDER BY created_at DESC
+    LIMIT 50
+  `;
+  db.query(query, [req.user.id], (err, results) => {
+    if (err) return res.status(500).json({ message: 'DB error' });
+    res.json(results);
   });
 });
 
