@@ -38,6 +38,28 @@
             opacity: 0.7;
             pointer-events: none;
         }
+        
+        .forgot-password {
+            text-align: right;
+            margin: 10px 0 20px 0;
+            font-size: 14px;
+        }
+        
+        .forgot-password a {
+            color: #007bff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .forgot-password a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+        
+        .forgot-password a:active {
+            color: #004085;
+        }
     </style>
 </head>
 <body>
@@ -58,6 +80,9 @@
             
             <input type="text" class="input-box" id="loginEmail" placeholder="Username or Email">
             <input type="password" class="input-box" id="loginPassword" placeholder="Password">
+            <div id="forgotPasswordLink" class="forgot-password" style="display: none;">
+                <a href="#" onclick="handleForgotPassword()">Forgot Password?</a>
+            </div>
             <button class="button primary" type="submit" id="loginButton">Login</button>
             <div class="signup">Don't have an account yet? <a href="signup.html">Sign up</a></div>
         </form>
@@ -85,12 +110,14 @@
         // Function to show error message
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
+            const forgotPasswordLink = document.getElementById('forgotPasswordLink');
             errorDiv.textContent = message;
             errorDiv.classList.add('show');
             
             // Add error styling to input fields
             document.getElementById('loginEmail').classList.add('error');
             document.getElementById('loginPassword').classList.add('error');
+            forgotPasswordLink.style.display = 'block';
             
             // Hide error after 5 seconds
             setTimeout(() => {
@@ -195,6 +222,34 @@
                 setLoading(false);
             }
         });
+
+        async function handleForgotPassword() {
+  const email = document.getElementById('loginEmail').value;
+
+  if (!email) {
+    showError('Please enter your email address to reset your password.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${apiBase}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert('Password reset email sent. Please check your inbox.');
+    } else {
+      showError(data.message || 'Unable to send reset email.');
+    }
+  } catch (err) {
+    console.error(err);
+    showError('Network error. Please try again.');
+  }
+}
+
     </script>
 </body>
 </html>

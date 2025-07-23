@@ -1,11 +1,16 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 import db from '../db.js';
 import nodemailer from 'nodemailer';
 import { body, validationResult } from 'express-validator'; // ✅ Required for validation
 
 const router = express.Router();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ✅ Generates user code like BRDX-ABCD1234
 function generateUserCode() {
@@ -14,12 +19,18 @@ function generateUserCode() {
 
 // ✅ Nodemailer setup
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // TLS
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: 'lancelarnoco@gmail.com',
+    pass: 'qpzxrlnlhomuatjt'
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
+
 
 console.log('USER:', process.env.EMAIL_USER);
 console.log('PASS:', process.env.EMAIL_PASS);
@@ -152,5 +163,76 @@ router.post('/login', (req, res) => {
     });
   });
 });
+
+// ✅ Generate random token for password reset
+import crypto from 'crypto';
+import { verifyToken } from '../middleware/authMiddleware.js';
+
+router.post('/forgot-password', (req, res) => {
+  const { email } = req.body;
+
+  const getUserQuery = 'SELECT * FROM users WHERE email = ?';
+  db.query(getUserQuery, [email], (err, users) => {
+    if (err) return res.status(500).send({ message: 'Database error' });
+    if (users.length === 0) return res.status(404).send({ message: 'Email not found' });
+
+    const user = users[0];
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = Date.now() + 3600000; // 1 hour from now
+
+    // ✅ Save token and expiry
+    const updateQuery = 'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?';
+    db.query(updateQuery, [token, expires, user.id], (err2) => {
+      if (err2) return res.status(500).send({ message: 'Error saving reset token' });
+
+      const resetLink = `http://localhost:51540/auth/reset-password?token=${token}`;
+
+      const mailOptions = {
+        from: `"Braddex" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: 'Reset Your Password - Braddex',
+        html: `<p>Hi ${user.username},</p><p>Click below to reset your password:</p><a href="${resetLink}">${resetLink}</a><p>This link expires in 1 hour.</p>`
+      };
+
+      transporter.sendMail(mailOptions, (err3, info) => {
+        if (err3) return res.status(500).send({ message: 'Failed to send reset email' });
+
+        res.send({ message: 'Password reset email sent successfully' });
+      });
+    });
+  });
+});
+
+router.put('/reset-password', (req, res) => {
+  const { token, newPassword } = req.body;
+
+  const findQuery = 'SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > ?';
+  db.query(findQuery, [token, Date.now()], (err, users) => {
+    if (err) return res.status(500).send({ message: 'Database error' });
+    if (users.length === 0) return res.status(400).send({ message: 'Invalid or expired token' });
+
+    const user = users[0];
+    const hashedPassword = bcrypt.hashSync(newPassword, 8);
+
+    const updateQuery = 'UPDATE users SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?';
+    db.query(updateQuery, [hashedPassword, user.id], (err2) => {
+      if (err2) return res.status(500).send({ message: 'Password update failed' });
+
+      res.send({ message: 'Password has been reset successfully' });
+    });
+  });
+});
+
+router.get('/reset-password', (req, res) => {
+    const token = req.query.token;
+
+  if (!token) {
+    return res.status(400).send('Token is required.');
+  }
+
+    res.sendFile(path.join(__dirname, '..', '../public', 'includes/reset-password.html'));
+})
+
 
 export default router;

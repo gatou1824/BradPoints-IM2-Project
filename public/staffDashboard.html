@@ -472,7 +472,6 @@ function renderOrderItems() {
       <p>
         ${item.name}${rewardTag} | 
         Quantity: ${item.quantity} |
-        Price: ₱${price} |
         Points: ${points}
       </p>
     `;
@@ -486,7 +485,6 @@ function renderOrderItems() {
   totalDiv.style.paddingTop = '10px';
   totalDiv.style.fontWeight = 'bold';
   totalDiv.innerHTML = `
-    <p>Total Price: ₱${totalPrice.toFixed(2)}</p>
     <p>Total Points: ${totalPoints}</p>
   `;
 
@@ -533,7 +531,7 @@ function confirmUser() {
 
 
 
-  fetch('/foods', {
+  fetch('/foods/available', {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` }
   })
@@ -551,8 +549,6 @@ function confirmUser() {
 
       item.innerHTML = `
         <h3>${food.name}</h3>
-        <p>Description: ${food.description}</p>
-        <p>Price: ₱${food.price}</p>
         <p>Points: ${food.points}</p>
         <button onclick="addToOrder(${food.id})">Add to Order</button>
       `;

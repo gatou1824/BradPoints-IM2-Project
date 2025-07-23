@@ -573,6 +573,7 @@ function addSearchBar(sectionId, searchId, placeholder, filterFunction) {
     });
 });
 
+
 function addReward() {
   const tbody = document.getElementById('rewardsTableBody');
   console.log('clicked add rewards')
@@ -635,6 +636,194 @@ function addReward() {
     });
   });
 };
+
+
+// foods
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('/foods/', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById('foodsTableBody');
+      tbody.innerHTML = '';
+
+      data.forEach((food) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${food.id}</td>
+          <td>${food.name}</td>
+          <td>${food.points.toLocaleString()}</td>
+          <td>${food.is_available ? 'Yes' : 'No'}</td>
+          <td>
+            <button class="btn btn-sm btn-primary edit-btn">Edit</button>
+            <button class="btn btn-sm btn-success save-btn" style="display:none;">Save</button>
+            <button class="btn btn-sm btn-secondary cancel-btn" style="display:none;">Cancel</button>
+            <button class="btn btn-sm btn-danger delete-btn">Delete</button>
+          </td>
+        `;
+
+        const [foodIdTd, foodNameTd, pointsTd, isAvailableTd] = tr.children;
+
+        // Handle Edit
+        tr.querySelector('.edit-btn').addEventListener('click', () => {
+          foodNameTd.innerHTML = `<input type="text" value="${food.name}" class="form-control form-control-sm">`;
+          pointsTd.innerHTML = `<input type="number" value="${food.points}" class="form-control form-control-sm">`;
+          isAvailableTd.innerHTML = `
+            <select class="form-control">
+              <option value="true" ${food.is_available ? 'selected' : ''}>Yes</option>
+              <option value="false" ${!food.is_available ? 'selected' : ''}>No</option>
+            </select>
+          `;
+
+          tr.querySelector('.edit-btn').style.display = 'none';
+          tr.querySelector('.save-btn').style.display = 'inline-block';
+          tr.querySelector('.cancel-btn').style.display = 'inline-block';
+          tr.querySelector('.delete-btn').style.display = 'none';
+        });
+
+        // Handle Save
+        tr.querySelector('.save-btn').addEventListener('click', () => {
+          const updateName = foodNameTd.querySelector('input').value;
+          const updatePoints = pointsTd.querySelector('input').value;
+          const updateStatus = isAvailableTd.querySelector('select').value === 'true';
+
+          fetch(`/foods/update/${food.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              name: updateName,
+              points: parseInt(updatePoints),
+              is_available: updateStatus
+            })
+          })
+            .then(res => {
+              if (!res.ok) throw new Error('Failed to update');
+              return res.json();
+            })
+            .then(updated => {
+              foodNameTd.textContent = updated.name;
+              pointsTd.textContent = updated.points.toLocaleString();
+              isAvailableTd.textContent = updated.is_available ? 'Yes' : 'No';
+
+              tr.querySelector('.edit-btn').style.display = 'inline-block';
+              tr.querySelector('.save-btn').style.display = 'none';
+              tr.querySelector('.cancel-btn').style.display = 'none';
+              tr.querySelector('.delete-btn').style.display = 'inline-block';
+            })
+            .catch(err => {
+              console.error("Update error:", err);
+            });
+        });
+
+        // Handle Cancel
+        tr.querySelector('.cancel-btn').addEventListener('click', () => {
+          foodIdTd.textContent = food.id;
+          foodNameTd.textContent = food.name;
+          pointsTd.textContent = food.points.toLocaleString();
+          isAvailableTd.textContent = food.is_available ? 'Yes' : 'No';
+
+          tr.querySelector('.edit-btn').style.display = 'inline-block';
+          tr.querySelector('.save-btn').style.display = 'none';
+          tr.querySelector('.cancel-btn').style.display = 'none';
+          tr.querySelector('.delete-btn').style.display = 'inline-block';
+        });
+
+        // Handle Delete
+        tr.querySelector('.delete-btn').addEventListener('click', () => {
+          if (confirm(`Are you sure you want to delete "${food.name}"?`)) {
+            fetch(`/foods/delete/${food.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ name: food.name })
+            })
+              .then(res => {
+                if (!res.ok) throw new Error('Delete failed');
+                tr.remove();
+              })
+              .catch(err => {
+                console.error("Delete error:", err);
+              });
+          }
+        });
+
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(error => {
+      console.error('Error loading foods:', error);
+    });
+});
+
+// Add New Food
+function addFood() {
+  const tbody = document.getElementById('foodsTableBody');
+  if (document.getElementById('newFoodRow')) return;
+
+  const newRow = document.createElement('tr');
+  newRow.id = 'newFoodRow';
+  newRow.innerHTML = `
+    <td>Auto</td>
+    <td><input type="text" class="form-control" placeholder="Food Name" id="newFoodName" /></td>
+    <td><input type="number" class="form-control" placeholder="Points" id="newPoints" /></td>
+    <td>
+      <select class="form-control" id="newIsAvailable">
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </select>
+    </td>
+    <td>
+      <button class="btn btn-success btn-sm" id="saveFoodBtn">Save</button>
+      <button class="btn btn-secondary btn-sm" id="cancelFoodBtn">Cancel</button>
+    </td>
+  `;
+  tbody.prepend(newRow);
+
+  document.getElementById('cancelFoodBtn').addEventListener('click', () => {
+    newRow.remove();
+  });
+
+  document.getElementById('saveFoodBtn').addEventListener('click', () => {
+    const name = document.getElementById('newFoodName').value.trim();
+    const points = document.getElementById('newPoints').value.trim();
+    const is_available = document.getElementById('newIsAvailable').value === 'true';
+
+    if (!name || !points) {
+      alert('Please fill out all fields.');
+      return;
+    }
+
+    fetch('/foods/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        name,
+        points: parseInt(points),
+        is_available
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert('Food added!');
+      newRow.remove();
+      window.location.reload();
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Error saving food.');
+    });
+  });
+}
 
   </script>
 </body>

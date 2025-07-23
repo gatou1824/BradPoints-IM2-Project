@@ -4,12 +4,18 @@ dotenv.config( {path: '../.env'}); // ✅ This must come first
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // TLS
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: 'lancelarnoco@gmail.com',
+    pass: 'qpzxrlnlhomuatjt'
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
+
 
 const mailOptions = {
   from: `"Braddex Test" <${process.env.EMAIL_USER}>`,

@@ -17,7 +17,7 @@
                         </div>
                     </div>
 
-                    <div id="rewardsSection">
+                    <div id="rewardsSection" style="margin-bottom: 5rem;">
                         <div class="d-flex justify-content-between align-items-center mb-6">
                             <h2>Rewards Management</h2>
                             <button class="btn btn-primary custom-red-card" onclick="addReward()">Add Reward</button>
@@ -40,16 +40,28 @@
                         </table>
                     </div> 
 
-
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="quick-actions">
-                                <h3>Quick Actions</h3>
-                                <button class="btn btn-primary" onclick="location.href='users.html'">Add New Customer</button>
-                                <button class="btn btn-secondary" onclick="location.href='feedbacks.html'">View Latest Feedback</button>
-                            </div>
+                    <div id="foodsSection">
+                        <div class="d-flex justify-content-between align-items-center mb-6">
+                            <h2>Foods Management</h2>
+                            <button class="btn btn-primary custom-red-card" onclick="addFood()">Add Food</button>
                         </div>
-                    </div>  
+
+                        <table class="table table-hover">
+                            <thead class="thread-red">
+                                <tr>
+                                    <th>id</th>
+                                    <th>Food Name</th>
+                                    <th>Points</th>
+                                    <th>Available</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="foodsTableBody">
+                                
+                            </tbody>
+                        </table>
+                    </div> 
+
 
         <!-- Modal Divs Below -->
             <!-- add reward modal -->

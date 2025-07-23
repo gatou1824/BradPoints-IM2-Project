@@ -367,14 +367,20 @@ router.get('/notifications', verifyToken, (req, res) => {
   const query = `
     SELECT id, message, created_at, is_read
     FROM notifications
-    WHERE user_id IS NULL OR user_id = ?
+    WHERE (user_id IS NULL OR user_id = ?)
+      AND created_at >= (
+        SELECT created_at FROM users WHERE id = ?
+      )
     ORDER BY created_at DESC
     LIMIT 50
   `;
-  db.query(query, [req.user.id], (err, results) => {
+  db.query(query, [req.user.id, req.user.id], (err, results) => {
     if (err) return res.status(500).json({ message: 'DB error' });
     res.json(results);
   });
 });
+
+
+
 
 export default router;
