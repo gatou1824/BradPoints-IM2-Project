@@ -53,24 +53,50 @@ router.post(
     const hashedPassword = bcrypt.hashSync(password, 8);
     const user_code = generateUserCode();
 
-    const insertUserQuery =
-      'INSERT INTO users (user_code, username, email, password, points) VALUES (?, ?, ?, ?, ?)';
-        db.query(insertUserQuery, [user_code, username, email, hashedPassword, points], (err, result) => {
-        if (err) {
-        console.error('❌ DB ERROR:', err);
-        
-        if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(409).send({ message: 'Email is already registered' });
-        }
+    // Check for existing user
+    const checkQuery = `
+      SELECT id, is_deleted FROM users
+      WHERE email = ? OR username = ?
+    `;
 
-        return res.status(503).send({ message: 'Registration failed' });
-        }
+    db.query(checkQuery, [email, username], (err, results) => {
+      if (err) return res.status(500).send({ message: 'Server error' });
 
+      const existingUser = results[0];
 
+      if (existingUser && existingUser.is_deleted === 0) {
+        return res.status(409).send({ message: 'Email or username is already registered' });
+      }
 
-      const userId = result.insertId;
+      // If user exists and is deleted → reactivate them
+      if (existingUser && existingUser.is_deleted === 1) {
+        const updateQuery = `
+          UPDATE users
+          SET user_code = ?, username = ?, email = ?, password = ?, points = ?, is_verified = 0, is_deleted = 0
+          WHERE id = ?
+        `;
 
-      // ✅ Generate email verification token
+        db.query(updateQuery, [user_code, username, email, hashedPassword, points, existingUser.id], (err) => {
+          if (err) return res.status(500).send({ message: 'Reactivation failed' });
+          sendVerificationEmail(existingUser.id, username, email, res);
+        });
+
+      } else {
+        // Else → insert as new user
+        const insertQuery = `
+          INSERT INTO users (user_code, username, email, password, points)
+          VALUES (?, ?, ?, ?, ?)
+        `;
+
+        db.query(insertQuery, [user_code, username, email, hashedPassword, points], (err, result) => {
+          if (err) return res.status(503).send({ message: 'Registration failed' });
+          sendVerificationEmail(result.insertId, username, email, res);
+        });
+      }
+    });
+
+    // Send verification email
+    function sendVerificationEmail(userId, username, email, res) {
       const emailToken = jwt.sign(
         { id: userId, email },
         process.env.JWT_EMAIL_SECRET,
@@ -95,9 +121,10 @@ router.post(
         console.log('Verification email sent:', info.response);
         res.status(200).send({ message: 'Registration successful, please verify your email.' });
       });
-    });
+    }
   }
 );
+
 
 // ✅ EMAIL VERIFICATION
 router.get('/verify-email', (req, res) => {
@@ -111,7 +138,7 @@ router.get('/verify-email', (req, res) => {
     db.query(updateQuery, [userId], (err) => {
       if (err) return res.status(500).send({ message: 'Database error' });
 
-      res.send({ message: 'Email successfully verified!' });
+      res.sendFile(path.join(__dirname, '..', '../public', 'includes/verify-account.html'));
     });
   } catch (err) {
     res.status(400).send({ message: 'Invalid or expired token' });
