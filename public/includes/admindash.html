@@ -50,6 +50,12 @@
                     </div>
                 </div>
                 <div class="col-md-2 col-6">
+                    <div class="card text-bg-success text-center p-3">
+                    <div>Deleted Customers</div>
+                    <h5 id="deletedCustomers">0</h5>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6">
                     <div class="card text-bg-info text-center p-3">
                     <div>New Feedback</div>
                     <h5 id="feedbackCount">0</h5>
@@ -62,46 +68,21 @@
                 <div class="col-md-6">
                     <div class="card border-danger scrollable-card-body" style="max-height: 334px;">
                         <div class="card-header custom-red-card">Top 5 Users</div>
-                        <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center" id="top1">
-                            Review 3 unprocessed feedback entries
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center" id="top2">
-                            2 reward items expiring soon
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center" id="top3">
-                            Suspicious account flagged
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center" id="top4">
-                            Suspicious account flagged
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center" id="top5">
-                            Suspicious account flagged
-                        </li>
-                        </ul>
+                        <ul class="list-group list-group-flush" id="top-users-list"></ul>
+
                     </div>
                 </div>
 
                 <!-- pending actions -->
                 <div class="col-md-6">
                     <div class="card border-danger scrollable-card-body" style="max-height: 334px;">
-                        <div class="card-header custom-red-card" style="position: sticky;">Pending Actions</div>
+                        <div class="card-header custom-red-card" style="position: sticky;">Recenlty Registered</div>
                         <ul class="list-group list-group-flush" id="pending-list">
                         </ul>
                     </div>
                 </div>
 
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="quick-actions">
-                        <h3>Quick Actions</h3>
-                        <button class="btn btn-primary" onclick="location.href='users.html'">Add New Customer</button>
-                        <button class="btn btn-secondary" onclick="location.href='feedbacks.html'">View Latest Feedback</button>
-                        <button class="btn btn-success" onclick="location.href='rewards.html'">Add New Reward</button>
-                    </div>
-                </div>
-            </div>    
+            </div> 
     
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>

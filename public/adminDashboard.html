@@ -417,6 +417,24 @@
     window.location.href = '/';
   });
 
+    // Load deleted customers count
+  fetch('/customers/deleted/count', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Unauthorized');
+    return res.json();
+  })
+  .then(data => {
+      const deletedCustomers = document.getElementById('deletedCustomers');
+      if (deletedCustomers) deletedCustomers.textContent = data[0].totalCustCount;
+  })
+  .catch(err => {
+    alert('Access denied or token invalid. Redirecting...');
+    window.location.href = '/';
+  });
+
     // 3. Load verified customers count
   fetch('/feedback/recent/count', {
     method: 'GET',
@@ -437,36 +455,31 @@
   });
 
     // 3. Load verified customers count
-  fetch('/customers/top', {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` }
-  })
+fetch('/customers/top', {
+  method: 'GET',
+  headers: { Authorization: `Bearer ${token}` }
+})
   .then(res => {
     if (!res.ok) throw new Error('Unauthorized');
     return res.json();
   })
   .then(data => {
-    const top1 = document.getElementById('top1')
-    const top2 = document.getElementById('top2')
-    const top3 = document.getElementById('top3')
-    const top4 = document.getElementById('top4')
-    const top5 = document.getElementById('top5')
+    const list = document.getElementById('top-users-list');
+    list.innerHTML = ''; // Clear old items
 
-    top1.innerHTML = ` <strong> ${data[0].username} </strong> ${data[0].points} `
-
-    top2.innerHTML = ` <strong> ${data[1].username} </strong> ${data[1].points} `
-
-    top3.innerHTML = ` <strong> ${data[2].username} </strong> ${data[2].points} `
-
-    top4.innerHTML = ` <strong> ${data[3].username} </strong> ${data[3].points} `
-
-    top5.innerHTML = ` <strong> ${data[4].username} </strong> ${data[4].points} `
+    data.forEach((user, index) => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.innerHTML = `<strong>${user.username}</strong> ${user.points}`;
+      list.appendChild(li);
+    });
   })
   .catch(err => {
     alert('Access denied or token invalid. Redirecting...');
-    console.error("customers error:", err)
+    console.error("customers error:", err);
     // window.location.href = '/';  
   });
+
 
   fetch('/customers/recent', {
     method: 'GET',

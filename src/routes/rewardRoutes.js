@@ -258,12 +258,12 @@ SELECT
   r.food_id,
   f.name AS food_name,
   r.name AS reward_name,
+  r.is_deleted AS is_deleted,
   r.required_points,
   COUNT(rc.id) AS times_redeemed
   FROM rewards r
   LEFT JOIN food f ON r.food_id = f.id
   LEFT JOIN reward_claims rc ON rc.reward_id = r.id AND rc.redeemed = 1
-  WHERE r.is_deleted = 0
   GROUP BY r.id, r.food_id, f.name, r.name, r.required_points
   ORDER BY times_redeemed DESC;
   `;

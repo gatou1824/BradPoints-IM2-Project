@@ -413,6 +413,7 @@ const loadCustomers = (limit) => {
         <td>${user.points}</td>
         <td>${'.....'}</td>
         <td>${user.is_verified ? 'Yes' : 'No'}</td>
+        <td>${user.is_deleted ? 'Yes' : 'No'}</td>
         <td>
           <button class="btn btn-sm btn-primary edit-btn">Edit</button>
           <button class="btn btn-sm btn-success save-btn" style="display:none;">Save</button>
@@ -506,7 +507,7 @@ const loadCustomers = (limit) => {
       tr.querySelector('.delete-btn').addEventListener('click', () => {
       if (confirm(`Are you sure you want to delete ${user.username}?`)) {
         fetch(`/customers/delete/${user.id}`, {
-          method: 'DELETE',
+          method: 'PUT',
           headers: { Authorization: `Bearer ${token}` }
         })
         .then(res => {
@@ -535,7 +536,7 @@ const loadCustomers = (limit) => {
       showStaff = !showStaff;
 
       // Load all admin rows if showAll is true, otherwise load default (3)
-      loadAdmin(showStaff ? null : 3);
+      loadStaff(showStaff ? null : 3);
 
       if (showStaff) {
           document.getElementById('adminSection').style.display = 'none';
@@ -571,6 +572,7 @@ const loadStaff = (limit) => {
         <td>${user.id}</td>
         <td>${user.username}</td>
         <td>${user.email}</td>
+        <td>${user.is_deleted}</td>
         <td>
           <button class="btn btn-sm btn-primary edit-btn">Edit</button>
           <button class="btn btn-sm btn-success save-btn" style="display:none;">Save</button>
@@ -638,7 +640,7 @@ const loadStaff = (limit) => {
       tr.querySelector('.delete-btn').addEventListener('click', () => {
         if (confirm(`Are you sure you want to delete ${user.username}?`)) {
           fetch(`/staff/delete/${user.id}`, {
-            method: 'DELETE',
+            method: 'PUT',
             headers: { Authorization: `Bearer ${token}` }
           })
           .then(res => {

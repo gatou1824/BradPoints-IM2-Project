@@ -6,8 +6,13 @@
         <title>Reports & Feedback - Admin</title>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
         <link rel="stylesheet" href="adminStyles.css">
+        <style>
+            body {
+                height: 200vh;
+            }
+        </style>
     </head>
-    <body> 
+    <body id="incents-body"> 
                     <div style="display: flex; justify-content: center; margin-top: 20px;">
                         <div class="tab-buttons">
                             <a href="../adminDashboard.html"><button>Home</button></a>
@@ -30,6 +35,7 @@
                                     <th>Food Name</th>
                                     <th>Reward Name</th>
                                     <th>Points</th>
+                                    <th>Deleted</th>
                                     <th># of Redemptions</th>
                                     <th>Actions</th>
                                 </tr>
@@ -53,6 +59,7 @@
                                     <th>Food Name</th>
                                     <th>Points</th>
                                     <th>Available</th>
+                                    <th>Deleted</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>

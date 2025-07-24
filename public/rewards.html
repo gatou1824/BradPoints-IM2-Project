@@ -265,10 +265,8 @@
 
         // Wait for the content to be loaded and then add search bar
         setTimeout(() => {
-          const rewardsSection = document.getElementById('rewardsSection');
-          if (rewardsSection) {
             addSearchBar('rewardsSection', 'rewardsSearch', 'Search rewards by ID, name, or reward name...', filterRewards);
-          }
+            addSearchBar('foodsSection', 'foodsSearch', 'Search foods by ID, or food name...', filterFoods);
         }, 100);
     });
 
@@ -437,6 +435,21 @@ function addSearchBar(sectionId, searchId, placeholder, filterFunction) {
       rows.forEach(row => {
         const id = row.cells[0].textContent.toLowerCase();
         const foodName = row.cells[1].textContent.toLowerCase();
+        
+        const matches = id.includes(searchTerm.toLowerCase()) || 
+                       foodName.includes(searchTerm.toLowerCase())
+        row.style.display = matches ? '' : 'none';
+      });
+    }
+
+    // Filter customers function
+    function filterFoods(searchTerm) {
+      const tbody = document.getElementById('foodsTableBody');
+      const rows = tbody.querySelectorAll('tr');
+      
+      rows.forEach(row => {
+        const id = row.cells[0].textContent.toLowerCase();
+        const foodName = row.cells[1].textContent.toLowerCase();
         const rewardName = row.cells[2].textContent.toLowerCase();
         
         const matches = id.includes(searchTerm.toLowerCase()) || 
@@ -465,6 +478,7 @@ function addSearchBar(sectionId, searchId, placeholder, filterFunction) {
           <td>${reward.food_name}</td>
           <td>${reward.reward_name}</td>
           <td>${reward.required_points.toLocaleString()}</td>
+          <td>${reward.is_deleted}</td>
           <td>${reward.times_redeemed}</td>
           <td>
             <button class="btn btn-sm btn-primary edit-btn">Edit</button>
@@ -655,7 +669,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${food.id}</td>
           <td>${food.name}</td>
           <td>${food.points.toLocaleString()}</td>
-          <td>${food.is_available ? 'Yes' : 'No'}</td>
+          <td>${food.is_available ? 'Yes' : 'No'}
+          <td>${food.is_deleted}</td>
           <td>
             <button class="btn btn-sm btn-primary edit-btn">Edit</button>
             <button class="btn btn-sm btn-success save-btn" style="display:none;">Save</button>

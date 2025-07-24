@@ -10,7 +10,7 @@ const router = express.Router();
 // Get all customers
 router.get('/top', verifyToken, (req, res) => {
 
-    const getUsersQuery = 'SELECT * FROM users WHERE is_deleted = 0 ORDER BY points DESC LIMIT 5';
+    const getUsersQuery = 'SELECT * FROM users WHERE is_deleted = 0 AND role = "customer" ORDER BY points DESC LIMIT 5';
 
     db.query(getUsersQuery, (err, results) => {
         if (err) {
@@ -40,7 +40,7 @@ router.get('/recent', verifyToken, (req, res) => {
 // Get all customers count
 router.get('/count', verifyToken, (req, res) => {
 
-    const getUsersQuery = 'SELECT COUNT(*) AS totalCustCount FROM users';
+    const getUsersQuery = 'SELECT COUNT(*) AS totalCustCount FROM users WHERE role = "customer" AND is_deleted = 0';
 
     db.query(getUsersQuery, (err, results) => {
         if (err) {
@@ -55,7 +55,7 @@ router.get('/count', verifyToken, (req, res) => {
 // Get all customers count where user is verified
 router.get('/verfied/count', verifyToken, (req, res) => {
 
-    const getUsersQuery = 'SELECT COUNT(*) AS totalCustCount FROM users WHERE is_verified = 1';
+    const getUsersQuery = 'SELECT COUNT(*) AS totalCustCount FROM users WHERE role = "customer" AND is_verified = 1';
 
     db.query(getUsersQuery, (err, results) => {
         if (err) {
@@ -66,10 +66,26 @@ router.get('/verfied/count', verifyToken, (req, res) => {
         res.json(results);
     });
 });
+
 // Get all customers count where user isn't verified
 router.get('/unverified/count', verifyToken, (req, res) => {
 
-    const getUsersQuery = 'SELECT COUNT(*) AS totalCustCount FROM users WHERE is_verified = 0';
+    const getUsersQuery = 'SELECT COUNT(*) AS totalCustCount FROM users WHERE role = "customer" AND is_verified = 0';
+
+    db.query(getUsersQuery, (err, results) => {
+        if (err) {
+            console.error(err.message);
+            return res.sendStatus(500);
+        }
+
+        res.json(results);
+    });
+});
+
+// Get all customers count where user isn't verified
+router.get('/deleted/count', verifyToken, (req, res) => {
+
+    const getUsersQuery = 'SELECT COUNT(*) AS totalCustCount FROM users WHERE role = "customer" AND is_deleted = 1';
 
     db.query(getUsersQuery, (err, results) => {
         if (err) {
@@ -124,7 +140,7 @@ router.get('/cust/:limit', verifyToken, (req, res) => {
     }
 
 const getUsersQuery = limit ? 
-  'SELECT * FROM users WHERE role = "customer" AND is_deleted = 0 ORDER BY id LIMIT ?' :
+  'SELECT * FROM users WHERE role = "customer" ORDER BY id LIMIT ?' :
   'SELECT * FROM users WHERE role = "customer" ORDER BY id';
 
     db.query(getUsersQuery, limit ? [limit] : [], (err, results) => {

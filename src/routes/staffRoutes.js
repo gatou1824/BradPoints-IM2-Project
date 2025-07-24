@@ -30,7 +30,7 @@ router.get('/:limit', verifyToken, (req, res) => {
     }
 
 const getUsersQuery = limit ? 
-  'SELECT * FROM users WHERE role = "staff" AND is_deleted = 0 ORDER BY id LIMIT ?' :
+  'SELECT * FROM users WHERE role = "staff" ORDER BY id LIMIT ?' :
   'SELECT * FROM users WHERE role = "staff" ORDER BY id';
 
     db.query(getUsersQuery, limit ? [limit] : [], (err, results) => {
