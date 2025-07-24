@@ -470,11 +470,13 @@ function renderOrderItems() {
 
     itemDiv.innerHTML = `
       <p>
-        ${item.name}${rewardTag} | 
+        ${item.name}${rewardTag} |
         Quantity: ${item.quantity} |
         Points: ${points}
+        <button style="margin-left: 10px; background-color: #e11d48;" onclick="removeFromOrder(${item.id}, ${!!item.isReward})">Remove</button>
       </p>
     `;
+
     orderItemsDiv.appendChild(itemDiv);
   });
 
@@ -506,6 +508,11 @@ function renderOrderItems() {
 
 
   orderItemsDiv.appendChild(totalDiv);
+}
+
+function removeFromOrder(foodId, isReward) {
+  selectedFoods = selectedFoods.filter(item => !(item.id === foodId && !!item.isReward === isReward));
+  renderOrderItems();
 }
 
 
