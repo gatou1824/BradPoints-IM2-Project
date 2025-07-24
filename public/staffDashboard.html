@@ -421,7 +421,8 @@
 
 
   function addToOrder(foodId) {
-    const existing = selectedFoods.find(f => f.id === foodId);
+    const existing = selectedFoods.find(f => f.id === foodId && !f.isReward);
+
     if (existing) {
       existing.quantity += 1;
     } else {
@@ -430,11 +431,13 @@
       selectedFoods.push({
         id: foodId,
         name: food.name,
-        quantity: 1
+        quantity: 1,
+        isReward: false
       });
     }
     renderOrderItems();
   }
+
 function renderOrderItems() {
   const orderItemsDiv = document.getElementById('order-items');
   orderItemsDiv.innerHTML = '<h3>Selected Items:</h3>';
@@ -468,16 +471,27 @@ function renderOrderItems() {
     itemDiv.style.padding = '5px';
     itemDiv.style.marginTop = '5px';
 
+let buttons = `
+  <button onclick="increaseQuantity(${item.id}, ${!!item.isReward})">+</button>
+  <button onclick="decreaseQuantity(${item.id}, ${!!item.isReward})">−</button>
+  <button onclick="removeFromOrder(${item.id}, false)" style="margin-left: 5px; background-color: gray;">🗑</button>
+`;
+
+if (item.isReward) {
+  buttons = `
+    <button onclick="removeFromOrder(${item.id}, false)" style="margin-left: 5px; background-color: gray;">🗑</button>
+  `;
+}
+
 itemDiv.innerHTML = `
   <p>
     ${item.name}${rewardTag} |
     Quantity: ${item.quantity} |
     Points: ${points}
-    <button onclick="increaseQuantity(${item.id}, ${!!item.isReward})">+</button>
-    <button onclick="decreaseQuantity(${item.id}, ${!!item.isReward})">−</button>
-    <button onclick="removeFromOrder(${item.id}, ${!!item.isReward})" style="margin-left: 5px; background-color: gray;">🗑</button>
+    ${buttons}
   </p>
 `;
+
 
 
     orderItemsDiv.appendChild(itemDiv);
