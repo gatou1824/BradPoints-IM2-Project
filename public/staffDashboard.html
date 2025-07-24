@@ -468,14 +468,17 @@ function renderOrderItems() {
     itemDiv.style.padding = '5px';
     itemDiv.style.marginTop = '5px';
 
-    itemDiv.innerHTML = `
-      <p>
-        ${item.name}${rewardTag} |
-        Quantity: ${item.quantity} |
-        Points: ${points}
-        <button style="margin-left: 10px; background-color: #e11d48;" onclick="removeFromOrder(${item.id}, ${!!item.isReward})">Remove</button>
-      </p>
-    `;
+itemDiv.innerHTML = `
+  <p>
+    ${item.name}${rewardTag} |
+    Quantity: ${item.quantity} |
+    Points: ${points}
+    <button onclick="increaseQuantity(${item.id}, ${!!item.isReward})">+</button>
+    <button onclick="decreaseQuantity(${item.id}, ${!!item.isReward})">−</button>
+    <button onclick="removeFromOrder(${item.id}, ${!!item.isReward})" style="margin-left: 5px; background-color: gray;">🗑</button>
+  </p>
+`;
+
 
     orderItemsDiv.appendChild(itemDiv);
   });
@@ -515,6 +518,24 @@ function removeFromOrder(foodId, isReward) {
   renderOrderItems();
 }
 
+function decreaseQuantity(foodId, isReward) {
+  const itemIndex = selectedFoods.findIndex(item => item.id === foodId && !!item.isReward === isReward);
+  if (itemIndex > -1) {
+    selectedFoods[itemIndex].quantity -= 1;
+    if (selectedFoods[itemIndex].quantity <= 0) {
+      selectedFoods.splice(itemIndex, 1); // Remove the item if quantity is 0
+    }
+    renderOrderItems();
+  }
+}
+
+function increaseQuantity(foodId, isReward) {
+  const item = selectedFoods.find(item => item.id === foodId && !!item.isReward === isReward);
+  if (item) {
+    item.quantity += 1;
+    renderOrderItems();
+  }
+}
 
 
 function confirmUser() {
@@ -535,8 +556,6 @@ function confirmUser() {
     }
   }
 }
-
-
 
   fetch('/foods/available', {
     method: 'GET',
